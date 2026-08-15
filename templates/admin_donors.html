@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html>
+<script>
+function confirmAction(action){
+
+    if(action === "block"){
+        return confirm("⚠️ Are you sure you want to BLOCK this donor?");
+    }
+
+    if(action === "unblock"){
+        return confirm("Do you want to UNBLOCK this donor?");
+    }
+
+    return false;
+}
+</script>
+<head>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+<script>
+function cityOthers(){
+  var city = document.getElementById("city").value;
+  var box = document.getElementById("city_other");
+  box.style.display = city === "Others" ? "block" : "none";
+}
+
+window.onload = function(){
+  cityOthers();
+}
+
+</script>
+<title>All Donors</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    background: #fdf2f2;
+    background-image:
+      radial-gradient(ellipse at 0% 0%, #fde0e0 0%, transparent 50%),
+      radial-gradient(ellipse at 100% 100%, #fce4e4 0%, transparent 50%);
+    padding: 36px 32px;
+    color: #1a1a1a;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .header-icon {
+    width: 48px; height: 48px;
+    background: #c62828;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    box-shadow: 0 4px 12px rgba(198,40,40,0.3);
+  }
+  .header h2 {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: #b71c1c;
+  }
+  .header p {
+    font-size: 0.82rem;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  /* Back button */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    background: white;
+    color: #c62828;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1.5px solid #e8c0c0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  }
+  .back-btn:hover {
+    background: #c62828;
+    color: white;
+    box-shadow: 0 4px 14px rgba(198,40,40,0.25);
+  }
+
+  /* Filter card */
+  form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 22px;
+    border: 1px solid #f0d4d4;
+    box-shadow: 0 2px 12px rgba(198,40,40,0.07);
+  }
+  form label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #999;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  select, input[type="text"] {
+    padding: 9px 13px;
+    border: 1.5px solid #e8d0d0;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    background: #fdf5f5;
+    color: #1a1a1a;
+    outline: none;
+    transition: border 0.2s, box-shadow 0.2s;
+    min-width: 155px;
+  }
+  select:focus, input[type="text"]:focus {
+    border-color: #c62828;
+    box-shadow: 0 0 0 3px rgba(198,40,40,0.1);
+    background: white;
+  }
+  button[type="submit"] {
+    padding: 9px 22px;
+    background: #c62828;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(198,40,40,0.25);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  }
+  button[type="submit"]:hover {
+    background: #b71c1c;
+    box-shadow: 0 4px 14px rgba(198,40,40,0.35);
+    transform: translateY(-1px);
+  }
+
+  /* Stats strip */
+  .stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 12px 20px;
+    border: 1px solid #f0d4d4;
+    box-shadow: 0 2px 8px rgba(198,40,40,0.06);
+    font-size: 0.82rem;
+    color: #888;
+    font-weight: 500;
+  }
+  .stat-card span {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #c62828;
+    line-height: 1.2;
+  }
+
+  /* Table */
+  .table-wrap {
+    background: white;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #f0d4d4;
+    box-shadow: 0 4px 20px rgba(198,40,40,0.08);
+  }
+  table { width: 100%; border-collapse: collapse; }
+
+  thead tr { background: #c62828; }
+  th {
+    color: white;
+    padding: 13px 16px;
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #fdf0f0;
+    transition: background 0.18s;
+    cursor: default;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #fff5f5; }
+
+  td { padding: 13px 16px; font-size: 0.9rem; }
+
+  .donor-id {
+    font-weight: 700;
+    color: #c62828;
+    font-size: 0.85rem;
+    background: #fde8e8;
+    padding: 3px 9px;
+    border-radius: 5px;
+    display: inline-block;
+  }
+
+  .name-cell { font-weight: 600; color: #1a1a1a; }
+  .contact-cell { color: #555; font-size: 0.86rem; }
+
+  .blood-badge {
+    display: inline-block;
+    background: #c62828;
+    color: white;
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 6px rgba(198,40,40,0.3);
+  }
+
+  .city-cell { color: #444; font-size: 0.88rem; }
+
+  .edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: white;
+    color: #c62828;
+    padding: 6px 13px;
+    text-decoration: none;
+    border-radius: 7px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: 1.5px solid #e8c0c0;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.15s;
+    white-space: nowrap;
+  }
+  .edit-btn:hover {
+    background: #c62828;
+    color: white;
+    border-color: #c62828;
+    box-shadow: 0 4px 12px rgba(198,40,40,0.25);
+    transform: translateY(-1px);
+  }
+
+  .no-donors {
+    text-align: center;
+    padding: 40px;
+    color: #c62828;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+
+/* LIGHT */
+body[data-theme="light"] {
+  background: #fdf2f2;
+  color: #1a1a1a;
+}
+
+/* DARK */
+body[data-theme="dark"] {
+  background: #121212;
+  color: #ffffff;
+}
+
+/* ===== FULL DARK MODE FIX ===== */
+
+/* Background */
+body[data-theme="dark"] {
+  background: #121212;
+  color: #ffffff;
+}
+
+/* Cards / containers */
+body[data-theme="dark"] .table-wrap,
+body[data-theme="dark"] form,
+body[data-theme="dark"] .stat-card {
+  background: #1e1e1e;
+  color: white;
+  border-color: #333;
+}
+
+/* Table */
+body[data-theme="dark"] table {
+  color: white;
+}
+
+body[data-theme="dark"] thead tr {
+  background: #b71c1c;
+}
+
+body[data-theme="dark"] tbody tr {
+  border-bottom: 1px solid #333;
+}
+
+body[data-theme="dark"] tbody tr:hover {
+  background: #2a2a2a;
+}
+
+/* Inputs */
+body[data-theme="dark"] select,
+body[data-theme="dark"] input {
+  background: #2a2a2a;
+  color: white;
+  border: 1px solid #444;
+}
+
+/* Buttons */
+body[data-theme="dark"] .back-btn,
+body[data-theme="dark"] .edit-btn {
+  background: #2a2a2a;
+  color: white;
+  border-color: #444;
+}
+
+body[data-theme="dark"] .back-btn:hover,
+body[data-theme="dark"] .edit-btn:hover {
+  background: #333;
+}
+
+/* Text */
+body[data-theme="dark"] .name-cell,
+body[data-theme="dark"] .city-cell {
+  color: #ddd;
+}
+
+/* Donor ID badge */
+body[data-theme="dark"] .donor-id {
+  background: #333;
+  color: #ff6b6b;
+}
+
+/* ===== FIX TOP BUTTONS (DARK MODE) ===== */
+
+/* ===== FORCE FIX ALL TOP BUTTONS ===== */
+
+body[data-theme="dark"] .back-btn {
+  background: #1f1f1f !important;  /* 🔥 override inline */
+  color: #ffffff !important;
+  border: 1px solid #444 !important;
+  box-shadow: 0 2px 10px rgba(255, 0, 0, 0.15);
+}
+
+/* Fix inner text/icons */
+body[data-theme="dark"] .back-btn * {
+  color: #ffffff !important;
+}
+
+/* Hover */
+body[data-theme="dark"] .back-btn:hover {
+  background: #c62828 !important;
+  color: white !important;
+  border-color: #c62828 !important;
+}
+
+/* Active */
+body[data-theme="dark"] .back-btn.active {
+  background: #c62828 !important;
+  color: white !important;
+  border-color: #c62828 !important;
+}
+
+
+</style>
+</head>
+<body>
+
+<script>
+applyTheme();
+</script>
+
+<div class="header">
+  <div class="header-icon">🩸</div>
+  <div>
+    <h2>All Donors</h2>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div style="background:#d4edda; color:#155724; padding:10px; margin:10px; border-radius:5px;">
+          {{ messages[0] }}
+        </div>
+      {% endif %}
+    {% endwith %}
+    <p>Manage and filter registered blood donors</p>
+  </div>
+</div>
+
+<div style="display:flex; gap:10px; margin-bottom:20px;">
+  
+  <a href="/admin-options" class="back-btn">⬅ Back to Dashboard</a>
+
+  <a href="/admin-donors?filter=admin_updated" class="back-btn">
+    🛠 Recently Updated by Admin
+  </a>
+
+  <a href="/admin-donors?filter=blocked" class="back-btn" style="background:#fff3f3;">
+    🚫 Recently Blocked by Admin
+  </a>
+
+  <a href="/admin-donors?filter=unblocked" class="back-btn" style="background:#fff3f3;">
+    🔓 Recently Unblocked by Admin
+  </a>
+
+  <a href="/admin-donors?filter=history" class="back-btn" style="background:#fff3f3;">
+     180 Days History Of Blocked And Unblocked Donors
+  </a>
+
+</div>
+
+<form method="POST">
+  <label>City</label>
+  <select name="city" id="city" onchange="cityOthers()">
+    <option value="">All Cities</option>
+    {% for c in cities %}
+    <option value="{{c}}"
+    {% if selected_city == c %}selected{% endif %}>
+    {{c}}
+    </option>
+    {% endfor %}
+    <option value="Others"
+    {% if selected_city and selected_city not in cities %}selected{% endif %}>
+    Others
+    </option>
+  </select>
+  <input type="text" name="city_other" id="city_other"
+  placeholder="Enter city name"
+  value="{% if selected_city and selected_city not in cities %}{{selected_city}}{% endif %}"
+  style="display:{% if selected_city and selected_city not in cities %}block{% else %}none{% endif %};">
+
+  <label>Blood Group</label>
+  <select name="blood_group">
+
+    <option value="">All Groups</option>
+    <option value="A+" {% if selected_blood=="A+" %}selected{% endif %}>A+</option>
+    <option value="A-" {% if selected_blood=="A-" %}selected{% endif %}>A-</option>
+    <option value="B+" {% if selected_blood=="B+" %}selected{% endif %}>B+</option>
+    <option value="B-" {% if selected_blood=="B-" %}selected{% endif %}>B-</option>
+    <option value="AB+" {% if selected_blood=="AB+" %}selected{% endif %}>AB+</option>
+    <option value="AB-" {% if selected_blood=="AB-" %}selected{% endif %}>AB-</option>
+    <option value="O+" {% if selected_blood=="O+" %}selected{% endif %}>O+</option>
+    <option value="O-" {% if selected_blood=="O-" %}selected{% endif %}>O-</option>
+
+  </select>
+  <button type="submit">🔍 Filter</button>
+</form>
+
+<div class="stats" style="display:flex; align-items:center; gap:12px;">
+
+  <!-- Total Donors -->
+  <div class="stat-card">
+
+    <span>{{ donors|length }}</span>
+
+    {% if filter_type == "admin_updated" %}
+      Updated Donors
+    {% elif filter_type == "blocked" %}
+      Blocked Donors
+    {% elif filter_type == "unblocked" %}
+      Unblocked Donors
+    {% else %}
+      Total Donors
+    {% endif %}
+
+  </div>
+
+  <!-- 🔥 Show ONLY in admin_updated mode -->
+  {% if filter_type in ["admin_updated", "blocked", "unblocked"] %}
+  <a href="/admin-donors" class="back-btn" style="padding:10px 16px;">
+    🔙 View All Donors
+  </a>
+  {% endif %}
+
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Donor ID</th>
+        <th>Name</th>
+        <th>Contact</th>
+        <th>Blood Group</th>
+        <th>Current City</th>
+     
+        {% if filter_type == "history" %}
+            <th>History</th>
+        {% endif %}
+
+        {% if filter_type == "admin_updated" %}
+            <th>Updated Date</th>
+            <th>Updated Time</th>
+        {% endif %}
+
+        {% if filter_type == "blocked" %}
+            <th>Blocked Date</th>
+            <th>Blocked Time</th>
+        {% endif %}
+
+        {% if filter_type == "unblocked" %}
+            <th>Unblocked Date</th>
+            <th>Unblocked Time</th>
+        {% endif %}
+
+        <th>Status</th>
+        <th>Action</th>
+        
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for d in donors %}
+
+      <tr>
+        <td><span class="donor-id">{{ d.donor_id }}</span></td>
+        <td class="name-cell">{{ d.name }}</td>
+        <td class="contact-cell">{{ d.contact_number }}</td>
+        <td><span class="blood-badge">{{ d.blood_group }}</span></td>
+        <td class="city-cell">📍 {{ d.current_city }}</td>
+
+        {% if filter_type == "admin_updated" %}
+          <td>{{ d.updated_date or "-" }}</td>
+          <td>{{ d.updated_time or "-" }}</td>
+      
+        {% elif filter_type == "blocked" %}
+          <td>{{ d.blocked_date or "-" }}</td>
+          <td>{{ d.blocked_time or "-" }}</td>
+        
+
+        {% elif filter_type == "unblocked" %}
+          <td>{{ d.unblocked_date or "-" }}</td>
+          <td>{{ d.unblocked_time or "-" }}</td>
+        {% endif %}
+      
+
+        {% if filter_type == "history" %}
+        <td>
+         <a href="{{ url_for('admin_app.donor_history', donor_id=d.donor_id) }}"
+            class="edit-btn"
+            style="background:#f3e5f5; color:#6a1b9a;">
+              View History
+         </a>
+        </td>           
+       {% endif %}
+
+        
+        <!-- ✅ STATUS (NOW CORRECT PLACE) -->
+        <td>
+          {% if d.status == "blocked" %}
+            <span style="color:#c62828; font-weight:600;">Blocked</span>
+          {% else %}
+            <span style="color:#2e7d32; font-weight:600;">Active</span>
+          {% endif %}
+        </td>
+
+        <!-- ✅ ACTION -->
+        <td style="display:flex; gap:6px;">
+         
+          {% if d.status == "blocked" %}
+
+            <button class="edit-btn" style="opacity:0.5; cursor:not-allowed;" disabled>
+              ✏️ Edit Donor
+            </button>
+ 
+          {% else %}
+            <a href="{{ url_for('admin_app.donor_details_updated_by_admin', donor_id=d.donor_id) }}"
+               class="edit-btn">
+              ✏️ Edit Donor
+            </a>
+          {% endif %}
+        
+          {% if d.status == "blocked" %}
+            <a href="{{ url_for('admin_app.toggle_donor_status', donor_id=d.donor_id) }}"
+               class="edit-btn"
+               style="background:#e8f5e9; color:#2e7d32;"
+               onclick="return confirmAction('unblock')">
+               🔓 Unblock
+            </a>
+          {% else %}
+            <a href="{{ url_for('admin_app.toggle_donor_status', donor_id=d.donor_id) }}"
+               class="edit-btn"
+               style="background:#ffebee; color:#c62828;"
+               onclick="return confirmAction('block')">
+              🚫 Block
+            </a>
+          {% endif %}
+        </td>   
+
+        
+      </tr>
+      
+      {% endfor %}
+      
+      {% if donors|length == 0 %}
+      <tr>
+        <td colspan="{% if filter_type == 'admin_updated' %}8{% else %}6{% endif %}" class="no-donors">
+          ⚠️ No donors found.
+        </td>
+      </tr>
+      {% endif %}
+                 
+    </tbody>
+  </table>
+</div>
+
+
+
+</body>
+</html>

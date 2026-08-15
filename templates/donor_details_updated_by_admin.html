@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+
+<script>
+function applyTheme() {
+    let theme = localStorage.getItem("theme") || "light";
+
+    if (theme === "system") {
+        const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        theme = dark ? "dark" : "light";
+    }
+
+    document.body.setAttribute("data-theme", theme);
+}
+</script>
+
+
+<title>Admin Update Donor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+var districts = {
+  "Andhra Pradesh":["Anantapur","Chittoor","East Godavari","Guntur","Krishna","Kurnool","Nellore","Prakasam","Srikakulam","Tirupati","Visakhapatnam","Vizianagaram","West Godavari","Kadapa"],
+  "Telangana":["Hyderabad","Warangal","Karimnagar","Nizamabad","Khammam","Mahbubnagar","Nalgonda","Adilabad"],
+  "Tamil Nadu":["Chennai","Coimbatore","Madurai","Salem","Trichy","Vellore","Tirunelveli"],
+  "Maharashtra":["Mumbai","Pune","Nagpur","Nashik","Aurangabad","Thane"],
+  "Karnataka":["Bangalore","Mysore","Hubli","Mangalore","Belgaum"],
+  "Kerala":["Trivandrum","Kochi","Kozhikode","Thrissur"]
+};
+
+function loadDistrict(type){
+  var state = document.getElementById(type+"_state").value;
+  var box = document.getElementById(type+"_district");
+  box.innerHTML = "<option value=''>Select District</option>";
+  if(districts[state]){
+    districts[state].forEach(function(d){
+      var opt = document.createElement("option");
+      opt.value = d; opt.text = d; box.appendChild(opt);
+    });
+  }
+  box.innerHTML += "<option value='Others'>Others</option>";
+}
+
+
+function stateOthers(type){
+  var val = document.getElementById(type+"_state").value;
+  document.getElementById(type+"_state_other").style.display =
+      (val === "Others") ? "block" : "none";
+}
+
+function districtOthers(type){
+  var val = document.getElementById(type+"_district").value;
+  document.getElementById(type+"_district_other").style.display = (val==="Others") ? "block" : "none";
+}
+
+function cityOthers(type){
+  var val = document.getElementById(type+"_city").value;
+  document.getElementById(type+"_city_other").style.display = (val==="Others") ? "block" : "none";
+}
+
+function streetOthers(type){
+  var val = document.getElementById(type+"_street").value;
+  document.getElementById(type+"_street_other").style.display = (val==="Others") ? "block" : "none";
+}
+
+function countryOther(){
+  var code = document.getElementById("country_code").value;
+  document.getElementById("country_code_other").style.display = (code==="Others") ? "inline-block" : "none";
+}
+
+
+
+
+async function detectLocation(pin, type) {
+  if (pin.length != 6) return;
+  try {
+    let response = await fetch("https://api.postalpincode.in/pincode/" + pin);
+    let data = await response.json();
+
+    if (data[0].Status == "Success") {
+      let postOffices = data[0].PostOffice;
+
+      // CITY
+      let cityBox = document.getElementById(type + "_city");
+      cityBox.innerHTML = "<option value=''>Select City</option>";
+      let cities = new Set();
+
+      postOffices.forEach(p => cities.add(p.District));
+
+      cities.forEach(city => {
+        let opt = document.createElement("option");
+        opt.value = city;
+        opt.text = city;
+        cityBox.appendChild(opt);
+      });
+
+      cityBox.innerHTML += "<option value='Others'>Others</option>";
+
+      // STREET
+      let streetBox = document.getElementById(type + "_street");
+      streetBox.innerHTML = "<option value=''>Select Area</option>";
+      let areas = new Set();
+
+      postOffices.forEach(p => areas.add(p.Name));
+
+      areas.forEach(area => {
+        let opt = document.createElement("option");
+        opt.value = area;
+        opt.text = area;
+        streetBox.appendChild(opt);
+      });
+
+      streetBox.innerHTML += "<option value='Others'>Others</option>";
+    }
+  } catch (e) {
+    console.log("Error fetching location");
+  }
+}
+
+let originalData = {
+    state: "{{ donor['current_state'] }}",
+    district: "{{ donor['current_district'] }}",
+    pincode: "{{ donor['current_pincode'] }}",
+    city: "{{ donor.get('current_city','') }}",
+    street: "{{ donor['current_street'] }}"
+};
+
+
+
+async function sameAddress() {
+    let isChecked = document.getElementById("same").checked;
+
+    if (isChecked) {
+
+        // -------- STATE --------
+        let permState = document.getElementById("permanent_state").value;
+        document.getElementById("current_state").value = permState;
+        stateOthers("current");
+
+        if (permState === "Others") {
+            document.getElementById("current_state_other").value =
+                document.getElementById("permanent_state_other").value;
+        } else {
+            loadDistrict("current");
+        }
+
+        // -------- DISTRICT --------
+        let permDistrict = document.getElementById("permanent_district").value;
+        let districtBox = document.getElementById("current_district");
+
+        if (![...districtBox.options].some(opt => opt.value === permDistrict)) {
+            let opt = document.createElement("option");
+            opt.value = permDistrict;
+            opt.text = permDistrict;
+            districtBox.appendChild(opt);
+        }
+
+        districtBox.value = permDistrict;
+        districtOthers("current");
+
+        if (permDistrict === "Others") {
+            document.getElementById("current_district").value = "Others";
+            document.getElementById("current_district_other").value =
+                document.getElementById("permanent_district_other").value;
+        }
+
+        // -------- PINCODE --------
+        let pin = document.getElementById("permanent_pincode").value;
+        document.getElementById("current_pincode").value = pin;
+
+        // ✅ FIX: removed permState condition
+        if (pin.length === 6) {
+
+            await detectLocation(pin, "current");
+
+            // ===== CITY =====
+            let permCity = document.getElementById("permanent_city").value;
+
+            if (permCity === "Others") {
+
+                document.getElementById("current_city").value = "Others";
+                cityOthers("current");
+
+                document.getElementById("current_city_other").value =
+                    document.getElementById("permanent_city_other").value;
+
+            } else {
+                let cityBox = document.getElementById("current_city");
+
+                if (![...cityBox.options].some(opt => opt.value === permCity)) {
+                    let opt = document.createElement("option");
+                    opt.value = permCity;
+                    opt.text = permCity;
+                    cityBox.appendChild(opt);
+                }
+
+                cityBox.value = permCity;
+                cityOthers("current");
+            }
+
+            // ===== STREET =====
+            let permStreet = document.getElementById("permanent_street").value;
+
+            if (permStreet === "Others") {
+
+                document.getElementById("current_street").value = "Others";
+                streetOthers("current");
+
+                document.getElementById("current_street_other").value =
+                    document.getElementById("permanent_street_other").value;
+
+            } else {
+                let streetBox = document.getElementById("current_street");
+
+                if (![...streetBox.options].some(opt => opt.value === permStreet)) {
+                    let opt = document.createElement("option");
+                    opt.value = permStreet;
+                    opt.text = permStreet;
+                    streetBox.appendChild(opt);
+                }
+
+                streetBox.value = permStreet;
+                streetOthers("current");
+            }
+
+        } else {
+            // fallback
+
+            let permCity = document.getElementById("permanent_city").value;
+            document.getElementById("current_city").value = permCity;
+            cityOthers("current");
+
+            if (permCity === "Others") {
+                document.getElementById("current_city_other").value =
+                    document.getElementById("permanent_city_other").value;
+            }
+
+            let permStreet = document.getElementById("permanent_street").value;
+            document.getElementById("current_street").value = permStreet;
+            streetOthers("current");
+
+            if (permStreet === "Others") {
+                document.getElementById("current_street_other").value =
+                    document.getElementById("permanent_street_other").value;
+            }
+        }
+
+    } else {
+
+        // -------- RESTORE ORIGINAL --------
+        document.getElementById("current_state").value = originalData.state;
+        stateOthers("current");
+
+        loadDistrict("current");
+
+        setTimeout(() => {
+            let districtBox = document.getElementById("current_district");
+
+            if (![...districtBox.options].some(opt => opt.value === originalData.district)) {
+                let opt = document.createElement("option");
+                opt.value = originalData.district;
+                opt.text = originalData.district;
+                districtBox.appendChild(opt);
+            }
+
+            districtBox.value = originalData.district;
+            districtOthers("current");
+        }, 100);
+
+        document.getElementById("current_pincode").value = originalData.pincode;
+
+        if (originalData.pincode.length === 6) {
+            await detectLocation(originalData.pincode, "current");
+        }
+
+        // CITY
+        if (originalData.city === "Others") {
+            document.getElementById("current_city").value = "Others";
+            cityOthers("current");
+            document.getElementById("current_city_other").value =
+                originalData.city_other || "";
+        } else {
+            let cityBox = document.getElementById("current_city");
+
+            if (![...cityBox.options].some(opt => opt.value === originalData.city)) {
+                let opt = document.createElement("option");
+                opt.value = originalData.city;
+                opt.text = originalData.city;
+                cityBox.appendChild(opt);
+            }
+
+            cityBox.value = originalData.city;
+            cityOthers("current");
+        }
+
+        // STREET
+        if (originalData.street === "Others") {
+            document.getElementById("current_street").value = "Others";
+            streetOthers("current");
+            document.getElementById("current_street_other").value =
+                originalData.street_other || "";
+        } else {
+            let streetBox = document.getElementById("current_street");
+
+            if (![...streetBox.options].some(opt => opt.value === originalData.street)) {
+                let opt = document.createElement("option");
+                opt.value = originalData.street;
+                opt.text = originalData.street;
+                streetBox.appendChild(opt);
+            }
+
+            streetBox.value = originalData.street;
+            streetOthers("current");
+        }
+    }
+}
+
+
+function calculateAge(){
+  var dob = document.getElementById("dob").value;
+  if(!dob) return;
+
+  var birth = new Date(dob);
+  var today = new Date();
+
+  var age = today.getFullYear() - birth.getFullYear();
+  var m = today.getMonth() - birth.getMonth();
+
+  if(m < 0 || (m === 0 && today.getDate() < birth.getDate())){
+    age--;
+  }
+
+  document.getElementById("current_age").value = age;
+
+  // 🔴 ADD THIS VALIDATION
+  if(age < 18 || age > 65){
+    alert("❌ Age must be between 18 and 65");
+
+    // clear invalid input
+    document.getElementById("dob").value = "";
+    document.getElementById("current_age").value = "";
+  }
+}
+
+
+
+window.onload = function(){
+
+
+  applyTheme();
+
+  // 🔥 Your existing logic
+  stateOthers("permanent");
+  districtOthers("permanent");
+  cityOthers("permanent");
+  streetOthers("permanent");
+
+  stateOthers("current");
+  districtOthers("current");
+  cityOthers("current");
+  streetOthers("current");
+
+  // 🔥 POPUP LOGIC (INSIDE FUNCTION)
+  {% if success %}
+  document.getElementById("popup").style.display = "flex";
+
+  setTimeout(function(){
+    window.location.href = "/admin-donors";   // ✅ redirect
+  }, 2000);
+{% endif %}
+
+};
+
+
+</script>
+
+
+<style>
+
+
+/* ===== THEME SYSTEM ===== */
+
+/* LIGHT */
+body[data-theme="light"] {
+  background: #fdf2f2;
+  color: #1a1a1a;
+}
+
+/* DARK */
+body[data-theme="dark"] {
+  background: #121212;
+  color: #ffffff;
+}
+
+/* DARK CARD */
+body[data-theme="dark"] .box {
+  background: #1e1e1e;
+  color: white;
+  border-color: #333;
+}
+
+/* DARK INPUTS */
+body[data-theme="dark"] input,
+body[data-theme="dark"] select {
+  background: #2a2a2a;
+  color: white;
+  border-color: #444;
+}
+
+/* DARK LABEL */
+body[data-theme="dark"] label {
+  color: #bbb;
+}
+
+/* DARK HEADER */
+body[data-theme="dark"] .page-header h2 {
+  color: #ff6b6b;
+}
+
+
+/* Fix calendar icon color in dark mode */
+body[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.8;
+    cursor: pointer;
+}
+
+
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    background: transparent;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, #fde0e0 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, #fce4e4 0%, transparent 50%);
+    padding: 36px 20px;
+    color: #1a1a1a;
+  }
+
+  /* Popup */
+  .popup {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .popup-box {
+    background: white;
+    padding: 40px 36px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+  }
+  .popup-box .tick { font-size: 3.5rem; margin-bottom: 14px; }
+  .popup-box h2 { color: #2e7d32; font-size: 1.3rem; font-weight: 700; }
+  .popup-box p  { color: #888; font-size: 0.83rem; margin-top: 6px; }
+
+  /* Card */
+  .box {
+    background: white;
+    padding: 32px 30px;
+    max-width: 760px;
+    margin: auto;
+    border-radius: 20px;
+    border: 1px solid #f0d4d4;
+    box-shadow: 0 8px 32px rgba(198,40,40,0.10);
+  }
+
+  /* Page header */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #fde8e8;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon {
+    width: 52px; height: 52px;
+    background: #c62828;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 14px rgba(198,40,40,0.30);
+    flex-shrink: 0;
+  }
+  .page-header h2 { font-size: 1.3rem; font-weight: 700; color: #b71c1c; }
+  .page-header p  { font-size: 0.8rem; color: #aaa; margin-top: 2px; }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: white;
+    color: #c62828;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: 1.5px solid #e8c0c0;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .back-btn:hover { background: #c62828; color: white; border-color: #c62828; }
+
+  /* Section heading */
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 26px 0 14px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #c62828;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .section-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #fde8e8;
+  }
+
+  /* Grid */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+  .grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .full { grid-column: 1 / -1; }
+
+  label {
+    display: block;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 5px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid #e8d0d0;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    background: #fdf5f5;
+    color: #1a1a1a;
+    outline: none;
+    transition: border 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  input:focus, select:focus {
+    border-color: #c62828;
+    box-shadow: 0 0 0 3px rgba(198,40,40,0.10);
+    background: white;
+  }
+  input[readonly] { background: #f5f5f5; color: #888; cursor: not-allowed; }
+
+  /* Phone row */
+  .phone-row { display: flex; gap: 10px; }
+  .phone-row select { width: 42%; flex-shrink: 0; }
+  .phone-row input#country_code_other { width: 28%; flex-shrink: 0; }
+  .phone-row input[name="contact_number"] { flex: 1; }
+
+  /* Hidden */
+  .hidden { display: none; }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 12px; margin-top: 28px; }
+  .btn-submit {
+    flex: 1;
+    padding: 13px;
+    background: #c62828;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.93rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(198,40,40,0.28);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  }
+  .btn-submit:hover {
+    background: #b71c1c;
+    box-shadow: 0 5px 16px rgba(198,40,40,0.35);
+    transform: translateY(-1px);
+  }
+  .btn-back {
+    padding: 13px 22px;
+    background: white;
+    color: #888;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.popup-box {
+  background: white;
+  padding: 25px 35px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  animation: popupFade 0.3s ease;
+}
+
+.popup-box h3 {
+  color: #2e7d32;
+  margin-bottom: 10px;
+}
+
+.popup-box p {
+  font-weight: 500;
+}
+
+@keyframes popupFade {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+
+.btn-back:hover {
+  background: #555;
+  color: white;
+  border-color: #555;
+}
+
+</style>
+</head>
+<body>
+
+{% if success_msg %}
+<div id="successPopup" class="popup-overlay">
+  <div class="popup-box">
+    <h3>✅ Success</h3>
+    <p>{{ success_msg }}</p>
+    <small>Redirecting to Admin Dashboard...</small>
+  </div>
+</div>
+{% endif %}
+
+<!-- Popup -->
+<div id="popup" class="popup">
+  <div class="popup-box">
+    <div class="tick">✅</div>
+    <h2>Updated Successfully!</h2>
+    <p>Redirecting to your profile...</p>
+  </div>
+</div>
+
+<div class="box">
+
+ <!-- Header -->
+<div class="page-header">
+  
+  <div class="header-left">
+    <div class="header-icon">✏️</div>
+    <div>
+      <h2>
+        Admin Update Donor Profile 
+        <span style="
+          background:#fdecea;
+          color:#c62828;
+          padding:3px 8px;
+          border-radius:6px;
+          font-size:11px;
+          margin-left:6px;">
+          Admin Access
+        </span>
+      </h2>
+      <p>Modify donor details including personal, medical, and address information</p>
+    </div>
+  </div>
+
+  <!-- ✅ Right Side Buttons -->
+  <div style="display:flex; gap:10px;">
+    
+    <button type="button" class="back-btn"
+      onclick="window.location.href='/admin-options'">
+      ⬅ Back To Dashboard
+    </button>
+
+    <button type="button" class="back-btn"
+      onclick="window.location.href='/admin-donors'">
+      📋 All Donors
+    </button>
+
+  </div>
+
+</div>
+
+
+
+{% if success_msg %}
+<script>
+  setTimeout(function() {
+      window.location.href = "/admin-donors";
+  }, 2500);
+</script>
+{% endif %}
+  <form method="POST">
+
+    <!-- Account Info -->
+    <div class="section-heading">👤 Account Information</div>
+    <div class="grid">
+      <div>
+        <label>Full Name</label>
+        <input name="name" value="{{ donor['name'] }}" required>
+      </div>
+      <div>
+        <label>Email</label>
+        <input name="email" type="email" value="{{ donor['email'] }}" required>
+      </div>
+      <div class="full">
+        <label>Contact Number</label>
+        {% if donor['contact_number'] and ' ' in donor['contact_number'] %}
+          {% set contact_parts = donor['contact_number'].split(' ') %}
+        {% else %}
+          {% set contact_parts = ['+91', donor['contact_number']] %}
+        {% endif %}
+
+        <div class="phone-row">
+          <select name="country_code" id="country_code" onchange="countryOther()" required>
+            <option value="+91" {{ 'selected' if contact_parts[0]=='+91' }}>🇮🇳 +91 India</option>
+            <option value="+1"  {{ 'selected' if contact_parts[0]=='+1'  }}>🇺🇸 +1 USA</option>
+            <option value="+44" {{ 'selected' if contact_parts[0]=='+44' }}>🇬🇧 +44 UK</option>
+            <option value="+61" {{ 'selected' if contact_parts[0]=='+61' }}>🇦🇺 +61 Australia</option>
+            <option value="+971"{{ 'selected' if contact_parts[0]=='+971'}}>🇦🇪 +971 UAE</option>
+            <option value="+65" {{ 'selected' if contact_parts[0]=='+65' }}>🇸🇬 +65 Singapore</option>
+            <option value="+81" {{ 'selected' if contact_parts[0]=='+81' }}>🇯🇵 +81 Japan</option>
+            <option value="Others">Others</option>
+          </select>
+          <input name="country_code_other" id="country_code_other" placeholder="+Code" style="display:none;">
+          <input name="contact_number" type="text" maxlength="10" pattern="[0-9]{10}"
+                 value="{{ contact_parts[1] if contact_parts|length>1 }}" placeholder="10-digit number" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- Personal Details -->
+    <div class="section-heading">📋 Personal Details</div>
+    <div class="grid">
+      <div>
+        <label>Date of Birth</label>
+        <input type="date" name="date_of_birth" id="dob" value="{{ dob_for_input }}" onchange="calculateAge()" required>
+      </div>
+      <div>
+        <label>Current Age</label>
+        <input name="current_age" id="current_age" value="{{ donor['current_age'] }}" readonly>
+      </div>
+    </div>
+
+    <!-- Permanent Address -->
+    <div class="section-heading">🔵 Permanent Address</div>
+    <div class="grid">
+      <div>
+        <label>State</label>
+        <select name="permanent_state" id="permanent_state" onchange="loadDistrict('permanent'); stateOthers('permanent')">
+          <option value="{{ donor['permanent_state'] }}" selected>{{ donor['permanent_state'] }}</option>
+          <option>Andhra Pradesh</option><option>Telangana</option><option>Tamil Nadu</option>
+          <option>Karnataka</option><option>Kerala</option><option>Maharashtra</option>
+          <option>Gujarat</option><option>Rajasthan</option><option>Uttar Pradesh</option>
+          <option>Madhya Pradesh</option><option>Bihar</option><option>West Bengal</option>
+          <option>Punjab</option><option>Haryana</option><option>Odisha</option>
+          <option>Assam</option><option>Jharkhand</option><option>Chhattisgarh</option>
+          <option>Himachal Pradesh</option><option>Uttarakhand</option><option>Goa</option>
+          <option>Tripura</option><option>Meghalaya</option><option>Manipur</option>
+          <option>Mizoram</option><option>Nagaland</option><option>Sikkim</option>
+          <option>Delhi</option><option>Chandigarh</option><option>Puducherry</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="permanent_state_other" name="permanent_state_other" placeholder="Enter State" style="display:none; margin-top:8px;">
+      </div>
+      <div>
+        <label>District</label>
+        <select name="permanent_district" id="permanent_district" onchange="districtOthers('permanent')">
+          <option value="{{ donor['permanent_district'] }}" selected>{{ donor['permanent_district'] }}</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="permanent_district_other" name="permanent_district_other" placeholder="Enter District" class="hidden" style="margin-top:8px;">
+      </div>
+      <div>
+        <label>Pincode</label>
+        <input id="permanent_pincode" name="permanent_pincode" value="{{ donor['permanent_pincode'] }}" placeholder="6-digit pincode" onkeyup="detectLocation(this.value,'permanent')">
+      </div>
+      <div>
+        <label>City</label>
+        <select name="permanent_city" id="permanent_city" onchange="cityOthers('permanent')">
+          <option value="{{ donor.get('permanent_city','') }}" selected>{{ donor.get('permanent_city','') }}</option>
+          <option value="">Select City</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="permanent_city_other" name="permanent_city_other" placeholder="Enter City" class="hidden" style="margin-top:8px;">
+      </div>
+      <div class="full">
+        <label>Street / Area / Flat</label>
+        <select name="permanent_street" id="permanent_street" onchange="streetOthers('permanent')">
+          <option value="{{ donor['permanent_street'] }}" selected>{{ donor['permanent_street'] }}</option>
+          <option value="">Select Area</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="permanent_street_other" name="permanent_street_other" placeholder="Enter Street / Area / Flat" class="hidden" style="margin-top:8px;">
+      </div>
+    </div>
+
+       <label style="margin:15px 0; display:block;">
+         <input type="checkbox" id="same" onclick="sameAddress()">
+         ✅ Current Address is same as Permanent Address
+       </label>
+
+    <!-- Current Address -->
+    <div class="section-heading">🟢 Current Address</div>
+    <div class="grid">
+      <div>
+        <label>State</label>
+        <select name="current_state" id="current_state" onchange="loadDistrict('current'); stateOthers('current')">
+          <option value="{{ donor['current_state'] }}" selected>{{ donor['current_state'] }}</option>
+          <option>Andhra Pradesh</option><option>Telangana</option><option>Tamil Nadu</option>
+          <option>Karnataka</option><option>Kerala</option><option>Maharashtra</option>
+          <option>Gujarat</option><option>Rajasthan</option><option>Uttar Pradesh</option>
+          <option>Madhya Pradesh</option><option>Bihar</option><option>West Bengal</option>
+          <option>Punjab</option><option>Haryana</option><option>Odisha</option>
+          <option>Assam</option><option>Jharkhand</option><option>Chhattisgarh</option>
+          <option>Himachal Pradesh</option><option>Uttarakhand</option><option>Goa</option>
+          <option>Tripura</option><option>Meghalaya</option><option>Manipur</option>
+          <option>Mizoram</option><option>Nagaland</option><option>Sikkim</option>
+          <option>Delhi</option><option>Chandigarh</option><option>Puducherry</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="current_state_other" name="current_state_other" placeholder="Enter State" style="display:none; margin-top:8px;">
+      </div>
+      <div>
+        <label>District</label>
+        <select name="current_district" id="current_district" onchange="districtOthers('current')">
+          <option value="{{ donor['current_district'] }}" selected>{{ donor['current_district'] }}</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="current_district_other" name="current_district_other" placeholder="Enter District" class="hidden" style="margin-top:8px;">
+      </div>
+      <div>
+        <label>Pincode</label>
+        <input id="current_pincode" name="current_pincode" value="{{ donor['current_pincode'] }}" placeholder="6-digit pincode" onkeyup="detectLocation(this.value,'current')">
+      </div>
+      <div>
+        <label>City</label>
+        <select name="current_city" id="current_city" onchange="cityOthers('current')">
+          <option value="{{ donor.get('current_city','') }}" selected>{{ donor.get('current_city','') }}</option>
+          <option value="">Select City</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="current_city_other" name="current_city_other" placeholder="Enter City" class="hidden" style="margin-top:8px;">
+      </div>
+      <div class="full">
+        <label>Street / Area / Flat</label>
+        <select name="current_street" id="current_street" onchange="streetOthers('current')">
+          <option value="{{ donor['current_street'] }}" selected>{{ donor['current_street'] }}</option>
+          <option value="">Select Area</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="current_street_other" name="current_street_other" placeholder="Enter Street / Area / Flat" class="hidden" style="margin-top:8px;">
+      </div>
+    </div>
+
+    <!-- Blood Details -->
+    <div class="section-heading">🩸 Blood Details</div>
+    <div class="grid three">
+      <div>
+        <label>Blood Group</label>
+        <select name="blood_group">
+          {% for bg in ['A+','A-','B+','B-','AB+','AB-','O+','O-'] %}
+          <option value="{{ bg }}" {{ 'selected' if donor['blood_group']==bg }}>{{ bg }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Availability</label>
+        <select name="availability">
+          <option value="Yes" {{ 'selected' if donor['availability']=='Yes' }}>Yes</option>
+          <option value="No"  {{ 'selected' if donor['availability']=='No'  }}>No</option>
+        </select>
+      </div>
+      <div>
+        <label>Months Since First Donation</label>
+        <input name="months" type="number" value="{{ donor['months_since_first_donation'] }}" placeholder="e.g. 12">
+      </div>
+      <div>
+        <label>Number of Donations</label>
+        <input name="donations" type="number" value="{{ donor['number_of_donation'] }}" placeholder="e.g. 3">
+      </div>
+      <div>
+        <label>Pints Donated</label>
+        <input name="pints" type="number" step="0.1" value="{{ donor['pints_donated'] }}" placeholder="e.g. 1.5">
+      </div>
+
+      <div>
+        <label>Haemoglobin (g/dL)</label>
+        <input name="haemoglobin" value="{{ donor.haemoglobin }}" required>
+      </div>
+
+      <div>
+        <label>Platelets Count</label>
+        <input name="platelets" value="{{ donor.platelets }}" required>
+      </div>
+
+      <div>
+        <label>Blood Pressure</label>
+        <input name="blood_pressure" value="{{ donor.blood_pressure }}" required>
+      </div>
+
+      <div>
+        <label>Gender</label>
+        <select name="gender">
+        <option value="">Select</option>
+        <option value="Male" {% if donor.gender=='Male' %}selected{% endif %}>Male</option>
+        <option value="Female" {% if donor.gender=='Female' %}selected{% endif %}>Female</option>
+        <option value="Other" {% if donor.gender=='Other' %}selected{% endif %}>Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Last Blood Donation Date</label>
+        <input type="date" name="last_blood_donation_date" value="{{ last_donation_for_input }}">
+      </div> 
+
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-row">
+      <button type="submit" class="btn-submit">✅ Update Profile</button>
+      
+    </div>
+
+  </form>
+</div>
+</body>
+</html>

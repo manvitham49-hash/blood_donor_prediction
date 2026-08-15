@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Blood Donor Prediction System</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ===== THEME SYSTEM ===== */
+
+/* LIGHT */
+body[data-theme="light"] {
+  background: #fdf2f2;
+  color: #1a1a1a;
+}
+
+/* DARK */
+body[data-theme="dark"] {
+  background: #121212;
+  color: #ffffff;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* BOX */
+.box {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #f0d4d4;
+  box-shadow: 0 8px 32px rgba(198,40,40,0.10);
+  padding: 40px 32px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+/* DARK MODE BOX */
+body[data-theme="dark"] .box {
+  background: #1e1e1e;
+  color: white;
+  border-color: #333;
+}
+
+/* ICON */
+.icon {
+  width: 64px; height: 64px;
+  background: #c62828;
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+  margin: 0 auto 18px;
+  box-shadow: 0 6px 18px rgba(198,40,40,0.30);
+}
+
+h1 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #b71c1c;
+  margin-bottom: 10px;
+}
+
+p {
+  font-size: 0.82rem;
+  color: #aaa;
+  margin-bottom: 28px;
+}
+
+/* BUTTONS */
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  border: 1.5px solid #f0d4d4;
+  margin-bottom: 10px;
+  background: #fdf5f5;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  transform: translateX(3px);
+  box-shadow: 0 4px 14px rgba(198,40,40,0.12);
+  border-color: #c62828;
+  background: white;
+}
+
+/* DARK BUTTONS */
+body[data-theme="dark"] .btn {
+  background: #2a2a2a;
+  color: white;
+  border-color: #444;
+}
+
+body[data-theme="dark"] .btn:hover {
+  background: #333;
+}
+
+/* ICONS */
+.btn .ico {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+}
+
+.admin .ico { background: #fee2e2; }
+.donor .ico { background: #fde8e8; }
+
+/* TEXT */
+.btn .txt strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+body[data-theme="dark"] .btn .txt strong {
+  color: white;
+}
+
+.btn .txt small {
+  font-size: 0.76rem;
+  color: #aaa;
+}
+
+/* ARROW */
+.btn .arr {
+  margin-left: auto;
+  color: #e8c0c0;
+  font-size: 1.2rem;
+}
+
+.btn:hover .arr { color: #c62828; }
+
+/* THEME DROPDOWN */
+.theme-select {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 6px;
+  border-radius: 6px;
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- THEME SELECT -->
+<select class="theme-select" onchange="setTheme(this.value)">
+  <option value="light">☀️ Light</option>
+  <option value="dark">🌙 Dark</option>
+  <option value="system">💻 System</option>
+</select>
+
+<div class="box">
+  <div class="icon">🩸</div>
+  <h1>Blood Donor Prediction System</h1>
+
+  <p>Select your login type to continue</p>
+
+  <a href="/admin-login" class="btn admin">
+    <div class="ico">🔐</div>
+    <div class="txt">
+      <strong>Admin Login</strong>
+      <small>Filter Cities, View & Manage Donors</small>
+    </div>
+    <span class="arr">›</span>
+  </a>
+
+  <a href="/login" class="btn donor">
+    <div class="ico">👤</div>
+    <div class="txt">
+      <strong>Donor Login</strong>
+      <small>Access your donor profile</small>
+    </div>
+    <span class="arr">›</span>
+  </a>
+</div>
+
+<!-- ✅ FIXED THEME SCRIPT -->
+<script>
+
+function applyTheme() {
+    let theme = localStorage.getItem("theme") || "light";
+
+    if (theme === "system") {
+        const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        theme = dark ? "dark" : "light";
+    }
+
+    document.body.setAttribute("data-theme", theme);
+}
+
+function setTheme(mode) {
+    localStorage.setItem("theme", mode);
+    applyTheme();
+}
+
+// Apply on load
+window.onload = function() {
+    applyTheme();
+
+    let saved = localStorage.getItem("theme") || "light";
+    document.querySelector(".theme-select").value = saved;
+};
+
+</script>
+
+</body>
+</html>

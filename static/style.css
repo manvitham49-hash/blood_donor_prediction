@@ -1,0 +1,14 @@
+body {
+    font-family: Arial;
+    padding: 40px;
+    background: #f5f5f5;
+}
+
+h2 {
+    color: darkred;
+}
+
+select, button {
+    padding: 8px;
+    width: 250px;
+}

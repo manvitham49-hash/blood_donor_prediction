@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+<script>
+const allProbs = {{ all_probs | tojson }};
+const selectedGroup = "{{ selected_group }}";
+</script>
+
+<script>
+
+function getColorMap() {
+    return {
+        "A+": "#ff6384",
+        "A-": "#36a2eb",
+        "B+": "#4bc0c0",
+        "B-": "#ff9f40",
+        "O+": "#9966ff",
+        "O-": "#c9cbcf",
+        "AB+": "#00a86b",
+        "AB-": "#8b0000"
+    };
+}
+
+
+let barChart, pieChart, lineChart; // 🔥 global
+
+function renderLegend(colorMap, labels, data) {
+    const isDark = document.body.getAttribute("data-theme") === "dark";
+
+    const legendBox = document.getElementById("legendBox");
+    legendBox.innerHTML = "";
+
+    labels.forEach((g, i) => {
+
+        const item = document.createElement("div");
+
+        item.style.display = "flex";
+        item.style.marginRight = "15px";
+
+        item.innerHTML = `
+            <div style="width:12px;height:12px;background:${colorMap[g]};margin-right:5px;"></div>
+            ${g} : ${data[i]}
+        `;
+
+        legendBox.appendChild(item);
+    });
+}
+
+</script>
+
+<title>ML Donor Prediction</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+
+body[data-theme="dark"] input,
+body[data-theme="dark"] select {
+  background: #2a2a2a;
+  color: #fff;
+  border-color: #444;
+}
+
+
+body[data-theme="dark"] .tabs {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+body[data-theme="dark"] .tab-btn {
+  color: #bbb;
+}
+
+body[data-theme="dark"] .tab-btn:hover {
+  background: #333;
+  color: #fff;
+}
+
+
+body[data-theme="dark"] form {
+  border-color: #444;
+}
+
+
+body[data-theme="dark"] .table-container {
+  border-color: #444;
+}
+
+body[data-theme="dark"] .alert {
+  background: #3a1f1f;
+  border-color: #5c2a2a;
+  color: #ff6b6b;
+}
+
+
+body[data-theme="dark"] table tbody tr:hover {
+  background: #2a2a2a;  /* dark hover */
+}
+
+
+/* ===== THEME VARIABLES ===== */
+
+/* LIGHT */
+body[data-theme="light"] {
+  --bg: #fdf2f2;
+  --card: #ffffff;
+  --text: #1a1a1a;
+}
+
+/* DARK */
+body[data-theme="dark"] {
+  --bg: #121212;
+  --card: #1e1e1e;
+  --text: #ffffff;
+}
+
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',Arial,sans-serif;background:var(--bg);color:var(--text);padding:20px}
+a{color:#c62828;text-decoration:none}
+a:hover{text-decoration:underline}
+
+.header{display:flex;justify-content:space-between;align-items:center;max-width:1300px;margin:0 auto 20px;padding:16px 24px;background:var(--card);border-radius:14px;box-shadow:0 2px 10px rgba(198,40,40,0.08);border-left:4px solid #c62828}
+.header h2{font-size:1.1rem;font-weight:700;color:#c62828;display:flex;align-items:center;gap:8px}
+.header a{font-size:0.85rem;color:#888;border:1px solid #ddd;padding:6px 14px;border-radius:8px;transition:all .2s}
+.header a:hover{background:#fff0f0;border-color:#c62828;color:#c62828;text-decoration:none}
+
+.card{background:var(--card);padding:28px 32px;max-width:1300px;margin:0 auto;border-radius:16px;box-shadow:0 4px 20px rgba(198,40,40,0.08)}
+
+form{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:20px;background:var(--card);border-radius:12px;border:1px solid #ffe0e0}
+label{font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#c62828;display:block;margin-bottom:4px}
+.field{display:flex;flex-direction:column}
+select,input[type=text]{padding:10px 14px;border-radius:9px;border:1.5px solid #f5c6c6;background:#fff;font-family:inherit;font-size:0.9rem;color:var(--text);transition:border .2s;min-width:180px}
+select:focus,input[type=text]:focus{outline:none;border-color:#c62828}
+button[type=submit]{padding:10px 24px;background:#c62828;color:#fff;border:none;border-radius:9px;font-family:inherit;font-weight:600;font-size:0.9rem;cursor:pointer;transition:background .2s;align-self:flex-end}
+button[type=submit]:hover{background:#a31f1f}
+
+.alert{background:#fff0f0;border:1px solid #ffcccc;border-radius:10px;padding:12px 16px;color:#c62828;font-size:0.88rem;margin-top:12px}
+
+.tabs{margin-top:24px;display:flex;gap:6px;flex-wrap:wrap;background:#fff5f5;padding:6px;border-radius:12px;border:1px solid #ffe0e0}
+.tab-btn{padding:9px 18px;background:transparent;border:none;cursor:pointer;border-radius:8px;font-weight:600;font-size:0.85rem;color:#888;transition:all .2s;font-family:inherit}
+.tab-btn:hover{background:#ffe8e8;color:#c62828}
+.tab-btn.active{background:#c62828;color:#fff;box-shadow:0 2px 8px rgba(198,40,40,0.3)}
+
+.tab-content{display:none;margin-top:24px}
+.tab-content h3{font-size:1rem;font-weight:700;color:#c62828;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #fff0f0}
+
+.group-card{background:linear-gradient(135deg,#c62828,#e53935);border-radius:16px;padding:36px;color:#fff;text-align:center}
+.group-card .prob{font-size:3.5rem;font-weight:700;letter-spacing:-2px;margin:8px 0}
+.group-card .status{font-size:1rem;opacity:.85;margin-bottom:20px}
+.group-meta{display:flex;justify-content:center;gap:40px;margin-top:20px;flex-wrap:wrap}
+.group-meta div{text-align:center}
+.group-meta .key{font-size:0.72rem;text-transform:uppercase;letter-spacing:.08em;opacity:.7}
+.group-meta .val{font-size:1.1rem;font-weight:700;margin-top:2px}
+
+.sort-box{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:0.85rem;color:#888}
+.sort-box select{min-width:200px;padding:8px 12px;font-size:0.85rem}
+
+.table-container{overflow-x:auto;border-radius:12px;border:1px solid #ffe0e0}
+table{width:100%;border-collapse:collapse;font-size:0.85rem}
+table th{background:#c62828;color:#fff;padding:12px 14px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;white-space:nowrap}
+table td{padding:11px 14px;border-bottom:1px solid #fff0f0;vertical-align:middle}
+table tbody tr:hover{background:#fff8f8}
+table tbody tr:last-child td{border-bottom:none}
+
+.badge{padding:4px 11px;border-radius:20px;font-weight:600;font-size:0.76rem;display:inline-block;white-space:nowrap}
+.green{background:#e8f5e9;color:#2e7d32}
+.yellow{background:#fff3e0;color:#e65100}
+.red{background:#ffebee;color:#c62828}
+
+.prob-bar{display:flex;align-items:center;gap:8px}
+.prob-bar .bar{flex:1;height:5px;background:#ffe0e0;border-radius:99px;min-width:50px}
+.prob-bar .fill{height:100%;border-radius:99px}
+.prob-bar .num{font-weight:600;font-size:0.85rem;min-width:32px}
+
+
+</style>
+
+<script>
+
+
+
+
+function toggleOtherCity(){
+  document.getElementById("city_other").style.display=document.getElementById("city").value==="Others"?"block":"none";
+}
+
+
+function showTab(tabName, btn) {
+
+    // hide all
+    document.querySelectorAll(".tab-content").forEach(div => {
+        div.style.display = "none";
+    });
+
+    // remove active
+    document.querySelectorAll(".tab-btn").forEach(b => {
+        b.classList.remove("active");
+    });
+
+    // show selected
+    document.getElementById(tabName).style.display = "block";
+    btn.classList.add("active");
+
+    if (tabName === "chart") {
+        // do nothing
+    }
+
+} // ✅ THIS WAS MISSING
+
+
+let originalRows={};
+function storeOriginal(id){
+  let t=document.getElementById(id);
+  if(!originalRows[id])originalRows[id]=Array.from(t.rows).slice(1).map(r=>r.cloneNode(true));
+}
+
+
+function showView(view) {
+    document.getElementById("chartSection").style.display =
+        (view === "chart") ? "block" : "none";
+
+    if (view === "chart") renderCharts();
+}
+
+function getColorMap() {
+
+    return {
+        "A+": "#ff6384",
+        "A-": "#36a2eb",
+        "B+": "#4bc0c0",
+        "B-": "#ff9f40",
+        "O+": "#9966ff",
+        "O-": "#c9cbcf",
+        "AB+": "#00a86b",
+        "AB-": "#8b0000"
+    };
+}
+
+
+let mainChart;
+
+function renderCharts(type = "bar") {
+    const isDark = document.body.getAttribute("data-theme") === "dark";
+
+    if (!allProbs || Object.keys(allProbs).length === 0) return;
+
+    const labels = Object.keys(allProbs);
+    const data = Object.values(allProbs);
+    const colorMap = getColorMap();
+
+    let bgColors = [];
+    let borderColors = [];
+
+    labels.forEach(group => {
+    if (group === selectedGroup) {
+        bgColors.push(colorMap[group]);
+        borderColors.push(isDark ? "#ffffff" : "#000000"); // ✅ FIX
+    } else {
+        bgColors.push(colorMap[group]);
+        borderColors.push(colorMap[group]);
+    }
+});
+
+
+    // 🔥 DESTROY OLD CHART
+    if (mainChart) {
+        mainChart.destroy();
+    }
+
+    // 🔥 CREATE SINGLE CHART
+    mainChart = new Chart(document.getElementById("mainChart"), { 
+    type: type,
+    plugins: [ChartDataLabels],
+
+    data: {
+        labels: labels,
+        datasets: [{
+            label: "Probability",
+            data: data,
+            backgroundColor: type === "line" ? "transparent" : bgColors,
+            borderColor: type === "line" ? "blue" : borderColors,
+            pointBackgroundColor: bgColors,
+            pointBorderColor: borderColors,
+
+            borderWidth: (ctx) => {
+                return labels[ctx.dataIndex] === selectedGroup ? 4 : 1;
+            },
+
+            fill: type === "line" ? false : true,
+
+            offset: type === "pie"
+                ? labels.map(g => g === selectedGroup ? 20 : 0)
+                : 0
+        }]
+    },
+
+    options: {
+        scales: (type === "bar" || type === "line") ? {
+            x: {
+                ticks: {
+                    color: isDark ? "#ffffff" : "#000000"
+                },
+                grid: {
+                    color: isDark ? "#444" : "#ddd"
+                }
+            },
+            y: {
+                ticks: {
+                    color: isDark ? "#ffffff" : "#000000"
+                },
+                grid: {
+                    color: isDark ? "#444" : "#ddd"
+                }
+            }
+        } : {},
+
+        plugins: {
+            datalabels: {
+                display: function(context) {
+                    return context.chart.config.type === 'pie';
+                },
+                color: "#fff",
+                font: {
+                    weight: "bold",
+                    size: 12
+                },
+                formatter: (value, ctx) => {
+                    let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                    let percentage = (value / sum * 100).toFixed(1) + "%";
+                    return ctx.chart.data.labels[ctx.dataIndex] + "\n" + percentage;
+                }
+            },
+
+            tooltip: {
+                callbacks: {
+                    label: (ctx) => ctx.label + ": " + ctx.raw
+                }
+            }
+        }
+    }
+});
+
+
+
+    renderLegend(colorMap, labels, data);
+}
+
+function changeChart(type) {
+
+    if (!type) return; // 🚫 prevents auto chart
+
+    renderCharts(type);
+}
+
+function renderLegend(colorMap, labels, data) {
+    const isDark = document.body.getAttribute("data-theme") === "dark";
+
+    const legendBox = document.getElementById("legendBox");
+    legendBox.innerHTML = "";
+
+    labels.forEach((group, i) => {
+
+        const div = document.createElement("div");
+
+        div.style.display = "flex";
+        div.style.alignItems = "center";
+        div.style.marginRight = "20px";
+        div.style.marginBottom = "10px";
+
+        div.innerHTML = `
+            <div style="
+                width:15px;
+                height:15px;
+                background:${colorMap[group]};
+                margin-right:8px;
+                border:2px solid ${group === selectedGroup ? (isDark ? "#fff" : "#000") : "transparent"};
+            "></div>
+
+            <span>
+                ${group} : <b>${data[i]}</b>
+            </span>
+        `;
+
+        legendBox.appendChild(div);
+    });
+}
+
+function sortTable(type,id){
+  let t=document.getElementById(id),rows=Array.from(t.rows).slice(1);
+  if(type==="default"){rows.forEach(r=>r.remove());originalRows[id].forEach(r=>t.appendChild(r.cloneNode(true)));return;}
+  rows.sort((a,b)=>{
+    let pA=parseFloat(a.cells[5].innerText),pB=parseFloat(b.cells[5].innerText);
+    let eA=a.cells[12].innerText.trim(),eB=b.cells[12].innerText.trim();
+    if(type==="smart")return((eB==="Eligible"?10:0)+pB)-((eA==="Eligible"?10:0)+pA);
+    return type==="high"?pB-pA:pA-pB;
+  });
+  rows.forEach(r=>t.appendChild(r));
+}
+window.onload=toggleOtherCity;
+</script>
+</head>
+<body>
+
+<div class="header">
+  <h2>🧬 ML Prediction Dashboard</h2>
+  <a href="/admin-options">⬅ Back to Dashboard</a>
+</div>
+
+<div class="card">
+  <form method="POST">
+    <div class="field">
+      <label>Current City</label>
+      <select name="city" id="city" onchange="toggleOtherCity()" required>
+        <option value="">Select City</option>
+        {% for c in cities %}
+        <option value="{{c}}" 
+            {% if selected_city and c.lower() == selected_city.lower() %}selected{% endif %}>
+            {{c}}
+        </option>
+        {% endfor %}
+        <option value="Others" {% if selected_option == "Others" %}selected{% endif %}>Others</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <input type="text" name="city_other" id="city_other" placeholder="Enter city"
+        value="{% if selected_option=='Others' %}{{selected_city}}{% endif %}"
+        style="display:{% if selected_option=='Others' %}block{% else %}none{% endif %}">
+    </div>
+    <div class="field">
+      <label>Blood Group</label>
+      <select name="blood_group" required>
+        <option value="">Select Blood Group</option>
+        {% for b in blood_groups %}
+        <option value="{{b}}" {% if selected_blood==b %}selected{% endif %}>{{b}}</option>
+        {% endfor %}
+      </select>
+    </div>
+   
+    <button type="submit">Predict →</button>
+
+    {% if no_donors %}
+    <div class="alert" style="width:100%">⚠ No donors found in <b>{{selected_city}}</b> for blood group <b>{{selected_blood}}</b></div>
+    {% endif %}
+  </form>
+
+{% if probability is not none %}
+  <div class="tabs">
+
+    <button type="button" class="tab-btn active" onclick="showTab('group',this)">Group</button>
+
+    <button type="button" class="tab-btn" onclick="showTab('chart',this)">📊 Chart</button>
+
+    <button type="button" class="tab-btn" onclick="showTab('individual',this)">Individual</button>
+
+    <button type="button" class="tab-btn" onclick="showTab('high_probability',this)">🟢 High</button>
+
+    <button type="button" class="tab-btn" onclick="showTab('moderate_probability',this)">🟡 Moderate</button>
+
+    <button type="button" class="tab-btn" onclick="showTab('low_probability',this)">🔴 Low</button>
+
+
+  </div>
+{% endif %}
+
+  <div id="group" class="tab-content" style="display:block">
+    <h3>Group Prediction</h3>
+    <div class="group-card">
+      <div style="font-size:.8rem;opacity:.7;text-transform:uppercase;letter-spacing:.1em">Group Probability</div>
+      <div class="prob">{{probability}}</div>
+      <div class="status">{{prediction_label}}</div>
+      <div class="group-meta">
+        <div><div class="key">City</div><div class="val">{{selected_city}}</div></div>
+        <div><div class="key">Blood Group</div><div class="val">{{selected_blood}}</div></div>
+      </div>
+    </div>
+  </div>
+
+
+
+<div id="chart" class="tab-content" style="display:none;">
+
+    <h3>Blood Group Chart</h3>
+
+    <!-- 🔥 DROPDOWN -->
+    <div style="margin-bottom:15px;">
+        <label style="font-weight:600;">Select Chart Type:</label>
+        <select onchange="changeChart(this.value)" style="padding:8px 12px;border-radius:8px;">
+            
+            <option value="" disabled selected>Select Chart Type</option>
+
+            <option value="bar">Bar Chart</option>
+            <option value="pie">Pie Chart</option>
+            <option value="line">Line Chart</option>
+
+
+        </select>
+    </div>
+
+    <!-- Only ONE canvas -->
+    <canvas id="mainChart"></canvas>
+
+    <div id="legendBox" style="margin-top:20px; display:flex; flex-wrap:wrap;"></div>
+
+</div>
+
+
+  <div id="individual" class="tab-content">
+    <h3>Individual Predictions</h3>
+    <div class="sort-box">Sort: <select onchange="sortTable(this.value,'individualTable')"><option value="default">Default Order</option><option value="smart">Best Donors First</option><option value="high">High → Low</option><option value="low">Low → High</option></select></div>
+    <div class="table-container">
+      <table id="individualTable" onmouseover="storeOriginal('individualTable')">
+        <tr><th>Name</th><th>Age</th><th>Gender</th><th>Contact</th><th>Status</th><th>Probability</th><th>Haemoglobin</th><th>Platelets</th><th>Blood Pressure</th><th>Last Donation</th><th>Days Since</th><th>Health</th><th>Eligibility</th><th>Reason</th></tr>
+        {% for d in individual_predictions %}
+        <tr>
+          <td><b>{{d.name}}</b></td><td>{{d.age}}</td><td>{{d.gender}}</td><td style="color:#888;font-size:.82rem">{{d.contact}}</td>
+          <td>{% if d.probability>=0.7 %}<span class="badge green">Likely Available</span>{% elif d.probability>=0.4 %}<span class="badge yellow">Moderate</span>{% else %}<span class="badge red">Less Likely</span>{% endif %}</td>
+          <td><div class="prob-bar"><span class="num">{{d.probability}}</span><div class="bar"><div class="fill" style="width:{{(d.probability*100)|int}}%;background:{% if d.probability>=0.7 %}#4caf50{% elif d.probability>=0.4 %}#ff9800{% else %}#c62828{% endif %}"></div></div></div></td>
+          <td>{{d.haemoglobin}}</td><td>{{d.platelets}}</td><td>{{d.blood_pressure}}</td><td>{{d.last_donation_date}}</td><td>{{d.days_since_last_donation}}</td>
+          <td>{% if d.health_condition=="Normal" %}<span class="badge green">Normal</span>{% else %}<span class="badge red">Not Normal</span>{% endif %}</td>
+          <td>{% if d.eligibility=="Eligible" %}<span class="badge green">Eligible</span>{% else %}<span class="badge red">Not Eligible</span>{% endif %}</td>     <td>{{d.reason}}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  {% macro donor_table(tableId,data,color) %}
+  <div class="sort-box">Sort: <select onchange="sortTable(this.value,'{{tableId}}')"><option value="default">Default Order</option><option value="smart">Best Donors First</option><option value="high">High → Low</option><option value="low">Low → High</option></select></div>
+  <div class="table-container"><table id="{{tableId}}" onmouseover="storeOriginal('{{tableId}}')">
+    <tr><th>Name</th><th>Age</th><th>Gender</th><th>Contact</th><th>Status</th><th>Probability</th><th>Haemoglobin</th><th>Platelets</th><th>Blood Pressure</th><th>Last Donation</th><th>Days Since</th><th>Health</th><th>Eligibility</th><th>Reason</th></tr>
+    {% for d in data %}
+    <tr>
+      <td><b>{{d.name}}</b></td><td>{{d.age}}</td><td>{{d.gender}}</td><td style="color:#888;font-size:.82rem">{{d.contact}}</td>
+      <td><span class="badge {{color}}">{{d.status}}</span></td>
+      <td><div class="prob-bar"><span class="num">{{d.probability}}</span><div class="bar"><div class="fill" style="width:{{(d.probability*100)|int}}%;background:{% if color=='green' %}#4caf50{% elif color=='yellow' %}#ff9800{% else %}#c62828{% endif %}"></div></div></div></td>
+      <td>{{d.haemoglobin}}</td><td>{{d.platelets}}</td><td>{{d.blood_pressure}}</td><td>{{d.last_donation_date}}</td><td>{{d.days_since_last_donation}}</td>
+      <td>{% if d.health_condition=="Normal" %}<span class="badge green">Normal</span>{% else %}<span class="badge red">Not Normal</span>{% endif %}</td>
+      <td>{% if d.eligibility=="Eligible" %}<span class="badge green">Eligible</span>{% else %}<span class="badge red">Not Eligible</span>{% endif %}</td>
+      <td>{{d.reason}}</td>
+    </tr>
+    {% endfor %}
+  </table></div>
+  {% endmacro %}
+
+  <div id="high_probability" class="tab-content"><h3>High Probability Donors</h3>{{ donor_table("highTable",high_probability,"green") }}</div>
+  <div id="moderate_probability" class="tab-content"><h3>Moderate Probability Donors</h3>{{ donor_table("moderateTable",moderate_probability,"yellow") }}</div>
+  <div id="low_probability" class="tab-content"><h3>Low Probability Donors</h3>{{ donor_table("lowTable",low_probability,"red") }}</div>
+  
+</div>
+
+<script>
+window.onload = function () {
+    if (typeof applyTheme === "function") {
+        applyTheme();
+    }
+    toggleOtherCity();
+};
+</script>
+
+</body>
+</html>

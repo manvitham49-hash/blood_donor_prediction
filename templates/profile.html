@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+<title>Donor Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+
+:root {
+  --bg: #fdf2f2;
+  --card: #ffffff;
+  --text: #1a1a1a;
+  --field-bg: #fdf5f5;
+}
+
+/* DARK */
+body[data-theme="dark"] {
+  --bg: #121212;
+  --card: #1e1e1e;
+  --text: #ffffff;
+  --field-bg: #2a2a2a;
+}
+
+
+.updated {
+  border: 2px solid #ff9800 !important;
+  background: #fff3e0 !important;
+  position: relative;
+}
+
+/* 🌙 DARK MODE FIX */
+body[data-theme="dark"] .updated {
+  background: #2a1f12 !important;   /* dark amber */
+  border: 2px solid #ff9800 !important;
+  color: #ffd180 !important;
+}
+
+
+body[data-theme="dark"] .updated .field-value,
+body[data-theme="dark"] .updated label,
+body[data-theme="dark"] .updated p {
+  color: #ffd180 !important;
+}
+
+
+.updated::after {
+  content: "UPDATED";
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: #ff9800;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  padding: 36px 20px;
+  color: var(--text);
+}
+
+
+/* LIGHT MODE */
+body[data-theme="light"] {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, #fde0e0 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, #fce4e4 0%, transparent 50%);
+}
+
+/* DARK MODE */
+body[data-theme="dark"] {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, #1a1a1a 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, #1f1f1f 0%, transparent 50%);
+}
+
+
+
+/* DARK MODE FIX FOR ADDRESS FIELDS */
+
+body[data-theme="dark"] .field.permanent {
+  background: #1a2330;          /* dark blue */
+  border-color: #2f4f7f;
+  border-left: 3px solid #4dabf7;
+}
+
+body[data-theme="dark"] .field.current {
+  background: #1a2b22;          /* dark green */
+  border-color: #2e7d32;
+  border-left: 3px solid #69db7c;
+}
+
+
+
+  .container {
+  max-width: 680px;
+  margin: auto;
+  background: var(--card);   /* ✅ FIX */
+  border-radius: 20px;
+  border: 1px solid #f0d4d4;
+  box-shadow: 0 8px 32px rgba(198,40,40,0.10);
+  overflow: hidden;
+}
+
+
+  /* Top banner header */
+  .profile-header {
+    background: #c62828;
+    padding: 28px 30px 22px;
+    text-align: center;
+    position: relative;
+  }
+  .profile-header .avatar {
+    width: 64px; height: 64px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 12px;
+    border: 3px solid rgba(255,255,255,0.4);
+  }
+  .profile-header h2 {
+    color: white;
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+  .profile-header p {
+    color: rgba(255,255,255,0.75);
+    font-size: 0.82rem;
+    margin-top: 3px;
+  }
+
+  /* Success banner */
+  .success-banner {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+    padding: 11px 16px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    display: none;
+    text-align: center;
+  }
+
+  /* Admin alert */
+  .admin-alert {
+    background: #fff8e1;
+    border-left: 4px solid #f9a825;
+    margin: 20px 24px 0;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    color: #555;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .admin-alert a {
+    background: #2e7d32;
+    color: white;
+    padding: 7px 14px;
+    border-radius: 7px;
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .admin-alert a:hover { background: #1b5e20; }
+
+  /* Body padding */
+  .body { padding: 24px 28px 28px; }
+
+  /* Section titles */
+  .section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #bbb;
+    margin: 22px 0 10px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  /* Grid for fields */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .grid.single { grid-template-columns: 1fr; }
+
+
+
+  .field {
+  background: var(--field-bg);   /* ✅ FIX */
+  border: 1px solid #f0d4d4;
+  border-radius: 10px;
+  padding: 11px 14px;
+  color: var(--text);            /* ✅ ADD */
+}
+
+
+  .field.permanent {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    border-left: 3px solid #1976d2;
+  }
+  .field.current {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    border-left: 3px solid #2e7d32;
+  }
+  .field-title {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 3px;
+  }
+
+
+
+  .field-value {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);   /* ✅ FIX */
+}
+
+
+  .blood-badge {
+    display: inline-block;
+    background: #c62828;
+    color: white;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    box-shadow: 0 2px 6px rgba(198,40,40,0.3);
+  }
+
+  /* Buttons */
+  .buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 26px;
+    flex-wrap: wrap;
+  }
+  .buttons a {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+    text-decoration: none;
+    padding: 11px 14px;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.15s;
+  }
+  .btn-primary {
+    background: #c62828;
+    color: white;
+    box-shadow: 0 3px 10px rgba(198,40,40,0.25);
+  }
+  .btn-primary:hover {
+    background: #b71c1c;
+    box-shadow: 0 5px 14px rgba(198,40,40,0.35);
+    transform: translateY(-1px);
+  }
+  .btn-outline {
+    background: white;
+    color: #c62828;
+    border: 1.5px solid #e8c0c0;
+  }
+  .btn-outline:hover {
+    background: #c62828;
+    color: white;
+    transform: translateY(-1px);
+  }
+  .btn-gray {
+    background: #f5f5f5;
+    color: #555;
+    border: 1.5px solid #e0e0e0;
+  }
+  .btn-gray:hover {
+    background: #555;
+    color: white;
+    transform: translateY(-1px);
+  }
+
+
+
+</style>
+</head>
+<body>
+
+{% set donor_update = updated_map.get(donor['donor_id'], {}) %}
+
+{% if donor_update is mapping %}
+  {% set updated_fields = donor_update.get('fields', []) %}
+{% else %}
+  {% set updated_fields = [] %}
+{% endif %}
+  
+
+
+<div class="container">
+
+
+
+  <!-- Header -->
+  <div class="profile-header">
+    <div class="avatar">🩸</div>
+    <h2>Name: {{ donor["name"] or 'Donor Name' }}</h2>
+    <p>Donor ID: {{ donor.donor_id or 'N/A' }}</p>
+  </div>
+
+  <div class="body">
+  
+  <div style="color:red; font-weight:bold;">
+    STATUS = {{ status }}
+  </div>
+
+  {% if status == "blocked" %}
+  <div style="
+    background:#ffebee;
+    border-left:4px solid #c62828;
+    color:#c62828;
+    margin: 0 24px 10px;
+    padding:12px 16px;
+    border-radius:10px;
+    font-size:0.9rem;
+    font-weight:600;
+  ">
+    🚫 Your account has been blocked by admin.
+  </div>
+  {% endif %}
+
+    <!-- Admin alert -->
+    {% if donor.donor_details_updated_by_admin == True or donor.donor_details_updated_by_admin == "Yes" %}
+    <div class="admin-alert">
+      ⚠️ Admin updated your Details. Please verify it.
+      <a href="/verify-admin-update">✔ Verify</a>
+    </div>
+    {% endif %}
+
+    <!-- Personal Info -->
+ <div class="section-title">Personal Information</div>
+ <div class="grid">
+
+  <div class="field {% if 'email' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Email</div>
+    <div class="field-value">{{ donor.email or 'N/A' }}</div>
+  </div>
+
+  <div class="field {% if 'contact_number' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Contact</div>
+    <div class="field-value">{{ donor["contact_number"] or 'N/A' }}</div>
+  </div>
+
+  <div class="field {% if 'date_of_birth' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Date of Birth</div>
+    <div class="field-value">{{ donor.date_of_birth or 'N/A' }}</div>
+  </div>
+
+  <div class="field {% if 'current_age' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Current Age</div>
+    <div class="field-value">{{ donor.current_age or 'N/A' }}</div>
+  </div>
+
+  <div class="field {% if 'age_at_time_of_registration' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Age at Registration</div>
+    <div class="field-value">{{ donor.age_at_time_of_registration or 'N/A' }}</div>
+  </div>
+
+  <div class="field {% if 'created_at' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Registered On</div>
+    <div class="field-value">{{ donor.created_at or 'N/A' }}</div>
+  </div>
+
+</div>
+    
+    <!-- Blood Info -->
+ <div class="section-title">Blood Donation</div>
+ <div class="grid">
+
+  <div class="field {% if 'blood_group' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Blood Group</div>
+    <div class="field-value">
+      <span class="blood-badge">{{ donor.blood_group or 'N/A' }}</span>
+    </div>
+  </div>
+
+  <div class="field {% if 'availability' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Availability</div>
+    <div class="field-value">{{ donor.availability or 'N/A' }}</div>
+  </div>
+
+  <div class="field {% if 'number_of_donation' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Number of Donations</div>
+    <div class="field-value">{{ donor.number_of_donation or 'N/A' }}</div>
+  </div>
+
+  <div class="field {% if 'pints_donated' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Pints Donated</div>
+    <div class="field-value">{{ donor.pints_donated or 'N/A' }}</div>
+  </div>
+
+  <div class="field {% if 'months_since_first_donation' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Months Since First Donation</div>
+    <div class="field-value">{{ donor.months_since_first_donation or 'N/A' }}</div>
+  </div>
+
+  <div class="field {% if 'haemoglobin' in updated_fields %}updated{% endif %}">
+    <label>Haemoglobin</label>
+    <p>{{ donor.haemoglobin }}</p>
+  </div>
+
+  <div class="field {% if 'platelets' in updated_fields %}updated{% endif %}">
+    <label>Platelets</label>
+    <p>{{ donor.platelets }}</p>
+  </div>
+
+  <div class="field {% if 'blood_pressure' in updated_fields %}updated{% endif %}">
+    <label>Blood Pressure</label>
+    <p>{{ donor.blood_pressure }}</p>
+  </div>
+
+  <div class="field {% if 'gender' in updated_fields %}updated{% endif %}">
+    <label>Gender</label>
+    <p>{{ donor.gender }}</p>
+  </div>
+
+  <div class="field {% if 'last_blood_donation_date' in updated_fields %}updated{% endif %}">
+    <label>Last Blood Donation Date</label>
+    <p>{{ donor.last_blood_donation_date }}</p>
+  </div>
+
+  <div class="field {% if 'days_since_last_donation' in updated_fields %}updated{% endif %}">
+    <label>Days Since Last Donation</label>
+    <p>{{ donor.days_since_last_donation }}</p>
+  </div>
+
+</div>    
+
+
+    <!-- Permanent Address -->
+<div class="section-title">🔵 Permanent Address</div>
+<div class="grid">
+
+  <div class="field permanent {% if 'permanent_street' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Street / House No</div>
+    <div class="field-value">{{ donor.permanent_street or 'N/A' }}</div>
+  </div>
+
+  <div class="field permanent {% if 'permanent_district' in updated_fields %}updated{% endif %}">
+    <div class="field-title">District</div>
+    <div class="field-value">{{ donor.permanent_district or 'N/A' }}</div>
+  </div>
+
+  <div class="field permanent {% if 'permanent_city' in updated_fields %}updated{% endif %}">
+    <div class="field-title">City</div>
+    <div class="field-value">{{ donor.permanent_city or 'N/A' }}</div>
+  </div>
+
+  <div class="field permanent {% if 'permanent_state' in updated_fields %}updated{% endif %}">
+    <div class="field-title">State</div>
+    <div class="field-value">{{ donor.permanent_state or 'N/A' }}</div>
+  </div>
+
+  <div class="field permanent {% if 'permanent_pincode' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Pincode</div>
+    <div class="field-value">{{ donor.permanent_pincode or 'N/A' }}</div>
+  </div>
+
+</div>
+
+
+    <!-- Current Address -->
+<div class="section-title">🟢 Current Address</div>
+<div class="grid">
+
+  <div class="field current {% if 'current_street' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Street / House No</div>
+    <div class="field-value">{{ donor.current_street or 'N/A' }}</div>
+  </div>
+
+  <div class="field current {% if 'current_district' in updated_fields %}updated{% endif %}">
+    <div class="field-title">District</div>
+    <div class="field-value">{{ donor.current_district or 'N/A' }}</div>
+  </div>
+
+  <div class="field current {% if 'current_city' in updated_fields %}updated{% endif %}">
+    <div class="field-title">City</div>
+    <div class="field-value">{{ donor.current_city or 'N/A' }}</div>
+  </div>
+
+  <div class="field current {% if 'current_state' in updated_fields %}updated{% endif %}">
+    <div class="field-title">State</div>
+    <div class="field-value">{{ donor.current_state or 'N/A' }}</div>
+  </div>
+
+  <div class="field current {% if 'current_pincode' in updated_fields %}updated{% endif %}">
+    <div class="field-title">Pincode</div>
+    <div class="field-value">{{ donor.current_pincode or 'N/A' }}</div>
+  </div>
+
+</div>   
+
+
+
+    <!-- Buttons -->
+    <div class="buttons">
+      <a href="/" class="btn-gray">🏠 Home</a>
+      {% if status == "blocked" %}
+        <a class="btn-outline" style="opacity:0.5; pointer-events:none;">
+          ✏️ Update Disabled  
+        </a>
+      {% else %}  
+        <a href="/update-profile" class="btn-outline">✏️ Update Profile</a>
+      {% endif %}        
+      <a href="/logout" class="btn-primary">🚪 Logout</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+window.onload = function () {
+
+    // ✅ Apply theme
+    if (typeof applyTheme === "function") {
+        applyTheme();
+    }
+
+    // ✅ Show success banner
+    var banner = document.getElementById("successBanner");
+    if (banner) {
+        banner.style.display = "block";
+        setTimeout(function () {
+            banner.style.display = "none";
+        }, 3000);
+    }
+
+};
+</script>
+
+</body>
+</html>

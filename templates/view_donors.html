@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>View Donors</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f4f6f9;
+padding:30px;
+}
+
+.box{
+background:white;
+padding:25px;
+border-radius:10px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th{
+background:#c62828;
+color:white;
+padding:10px;
+}
+
+td{
+padding:10px;
+border-bottom:1px solid #ddd;
+}
+
+button{
+background:#1976d2;
+color:white;
+padding:6px 12px;
+border:none;
+border-radius:5px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>Search Donors</h2>
+
+<form method="POST">
+
+<select name="city">
+<option value="">Select City</option>
+
+{% for c in cities %}
+<option value="{{c}}">{{c}}</option>
+{% endfor %}
+
+</select>
+
+<select name="blood_group">
+<option value="">Blood Group</option>
+
+<option>A+</option>
+<option>A-</option>
+<option>B+</option>
+<option>B-</option>
+<option>AB+</option>
+<option>AB-</option>
+<option>O+</option>
+<option>O-</option>
+
+</select>
+
+<button type="submit">Search</button>
+
+</form>
+
+
+{% if donors %}
+
+<table>
+
+<tr>
+<th>Donor ID</th>
+<th>Name</th>
+<th>Contact</th>
+<th>Blood Group</th>
+<th>Current City</th>
+<th>Edit Address</th>
+</tr>
+
+{% for d in donors %}
+
+<tr>
+
+<td style="font-weight:bold;color:#c62828;">
+{{ d.donor_id }}
+</td>
+
+<td>{{ d.name }}</td>
+<td>{{ d.contact_number }}</td>
+<td>{{ d.blood_group }}</td>
+<td>{{ d.current_city }}</td>
+
+<td>
+<a href="/admin-update-address/{{ d.donor_id }}">
+<button>Edit Address</button>
+</a>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% endif %}
+
+</div>
+
+</body>
+</html>

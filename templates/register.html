@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+
+<title>Register Donor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+var districts = {
+  "Andhra Pradesh":["Anantapur","Chittoor","East Godavari","Guntur","Krishna","Kurnool","Nellore","Prakasam","Srikakulam","Tirupati","Visakhapatnam","Vizianagaram","West Godavari","Kadapa"],
+  "Telangana":["Hyderabad","Warangal","Karimnagar","Nizamabad","Khammam","Mahbubnagar","Nalgonda","Adilabad"],
+  "Tamil Nadu":["Chennai","Coimbatore","Madurai","Salem","Trichy","Vellore","Tirunelveli"],
+  "Maharashtra":["Mumbai","Pune","Nagpur","Nashik","Aurangabad","Thane"],
+  "Karnataka":["Bangalore","Mysore","Hubli","Mangalore","Belgaum"],
+  "Kerala":["Trivandrum","Kochi","Kozhikode","Thrissur"]
+};
+
+function loadDistrict(type){
+  var state = document.getElementById(type+"_state").value;
+  var box = document.getElementById(type+"_district");
+  var otherBox = document.getElementById(type+"_district_other");
+  box.innerHTML = "<option value=''>Select District</option>";
+  otherBox.style.display = "none";
+  if(districts[state]){
+    districts[state].forEach(function(d){
+      var opt = document.createElement("option");
+      opt.value = d; opt.text = d; box.appendChild(opt);
+    });
+  }
+  box.innerHTML += "<option value='Others'>Others</option>";
+}
+
+function districtOthers(type){
+  var val = document.getElementById(type+"_district").value;
+  document.getElementById(type+"_district_other").style.display = (val==="Others") ? "block" : "none";
+}
+
+function stateOthers(type){
+  var val = document.getElementById(type+"_state").value;
+  document.getElementById(type+"_state_other").style.display = (val==="Others") ? "block" : "none";
+}
+
+function cityOthers(type){
+  var val = document.getElementById(type+"_city").value;
+  document.getElementById(type+"_city_other").style.display = (val==="Others") ? "block" : "none";
+}
+
+function streetOthers(type){
+  var val = document.getElementById(type+"_street").value;
+  document.getElementById(type+"_street_other").style.display = (val==="Others") ? "block" : "none";
+}
+
+function countryOther(){
+  var val = document.getElementById("country_code").value;
+  document.getElementById("country_code_other").style.display = (val==="Others") ? "inline-block" : "none";
+}
+
+async function detectLocation(pin, type){
+  if(pin.length != 6) return;
+  let response = await fetch("https://api.postalpincode.in/pincode/"+pin);
+  let data = await response.json();
+  if(data[0].Status=="Success"){
+    let postOffices = data[0].PostOffice;
+    let cityBox = document.getElementById(type+"_city");
+    cityBox.innerHTML = "<option value=''>Select City</option>";
+    let cities = new Set();
+    postOffices.forEach(p => cities.add(p.District));
+    cities.forEach(city => {
+      let opt = document.createElement("option");
+      opt.value = city; opt.text = city; cityBox.appendChild(opt);
+    });
+    cityBox.innerHTML += "<option value='Others'>Others</option>";
+    let streetBox = document.getElementById(type+"_street");
+    streetBox.innerHTML = "<option value=''>Select Area</option>";
+    let areas = new Set();
+    postOffices.forEach(p => areas.add(p.Name));
+    areas.forEach(area => {
+      let opt = document.createElement("option");
+      opt.value = area; opt.text = area; streetBox.appendChild(opt);
+    });
+    streetBox.innerHTML += "<option value='Others'>Others</option>";
+  }
+}
+
+
+async function sameAddress(){
+  let isChecked = document.getElementById("same").checked;
+
+  if(isChecked){
+
+    // ===== STATE =====
+    let permState = document.getElementById("permanent_state").value;
+    let currState = document.getElementById("current_state");
+    if (![...currState.options].some(opt => opt.value === permState)) {
+        let opt = document.createElement("option");
+        opt.value = permState;
+        opt.text = permState;
+        currState.appendChild(opt);
+    }
+
+    currState.value = permState;
+
+    // 🔥 trigger UI
+    stateOthers("current");
+
+    if(permState === "Others"){
+      let val = document.getElementById("permanent_state_other").value;
+      document.getElementById("current_state_other").value = val;
+    } else {
+      loadDistrict("current");
+    }
+
+    // ===== DISTRICT =====
+    let permDistrict = document.getElementById("permanent_district").value;
+    let districtBox = document.getElementById("current_district");
+
+    if (![...districtBox.options].some(opt => opt.value === permDistrict)) {
+      let opt = document.createElement("option");
+      opt.value = permDistrict;
+      opt.text = permDistrict;
+      districtBox.appendChild(opt);
+    }
+
+    districtBox.value = permDistrict;
+
+    // 🔥 trigger UI
+    districtOthers("current");
+
+    if(permDistrict === "Others"){
+      let val = document.getElementById("permanent_district_other").value;
+      document.getElementById("current_district_other").value = val;
+      document.getElementById("current_district").value = "Others";
+      districtOthers("current");
+    }
+
+    // ===== PINCODE =====
+    let pin = document.getElementById("permanent_pincode").value;
+    document.getElementById("current_pincode").value = pin;
+
+    // ===== CITY + STREET (🔥 FIXED) =====
+
+    // 🔥 ALWAYS use pincode (remove dependency on state)
+    if(pin.length === 6){
+      await detectLocation(pin, "current");
+    }
+
+    // ---------- CITY ----------
+    let permCity = document.getElementById("permanent_city").value;
+
+    if (permCity === "Others") {
+        document.getElementById("current_city").value = "Others";
+        cityOthers("current");
+
+        document.getElementById("current_city_other").value =
+            document.getElementById("permanent_city_other").value;
+
+    } else {
+        let cityBox = document.getElementById("current_city");
+
+        if (![...cityBox.options].some(opt => opt.value === permCity)) {
+            let opt = document.createElement("option");
+            opt.value = permCity;
+            opt.text = permCity;
+            cityBox.appendChild(opt);
+        }
+
+        cityBox.value = permCity;
+        cityOthers("current");
+    }
+
+    // ---------- STREET ----------
+    let permStreet = document.getElementById("permanent_street").value;
+
+    if (permStreet === "Others") {
+        document.getElementById("current_street").value = "Others";
+        streetOthers("current");
+
+        document.getElementById("current_street_other").value =
+            document.getElementById("permanent_street_other").value;
+
+    } else {
+        let streetBox = document.getElementById("current_street");
+
+        if (![...streetBox.options].some(opt => opt.value === permStreet)) {
+            let opt = document.createElement("option");
+            opt.value = permStreet;
+            opt.text = permStreet;
+            streetBox.appendChild(opt);
+        }
+
+        streetBox.value = permStreet;
+        streetOthers("current");
+    }
+
+  } else {
+
+    // ===== RESET VALUES =====
+    document.getElementById("current_state").value = "";
+    document.getElementById("current_district").innerHTML =
+      "<option value=''>Select District</option>";
+
+    document.getElementById("current_pincode").value = "";
+
+    document.getElementById("current_city").innerHTML =
+      "<option value=''>Select City</option><option value='Others'>Others</option>";
+
+    document.getElementById("current_street").innerHTML =
+      "<option value=''>Select Area</option><option value='Others'>Others</option>";
+
+    // hide "Others" inputs
+    document.getElementById("current_state_other").style.display = "none";
+    document.getElementById("current_district_other").style.display = "none";
+    document.getElementById("current_city_other").style.display = "none";
+    document.getElementById("current_street_other").style.display = "none";
+
+    // clear values
+    document.getElementById("current_state_other").value = "";
+    document.getElementById("current_district_other").value = "";
+    document.getElementById("current_city_other").value = "";
+    document.getElementById("current_street_other").value = "";
+  }
+}
+
+
+
+function calculateAge(){
+  var dob = document.getElementById("dob").value;
+  if(!dob) return;
+
+  var birthDate = new Date(dob);
+  var today = new Date();
+
+  var age = today.getFullYear() - birthDate.getFullYear();
+  var monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if(monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())){
+    age--;
+  }
+
+  // ✅ SET AGE
+  document.getElementById("current_age").value = age;
+  document.getElementById("reg_age").value = age;
+
+  // 🔴 AGE VALIDATION
+  if(age < 18 || age > 65){
+    alert("❌ You must be between 18 and 65 years to register as a donor");
+
+    // clear fields
+    document.getElementById("dob").value = "";
+    document.getElementById("current_age").value = "";
+    document.getElementById("reg_age").value = "";
+  }
+}
+
+
+function calculateDaysSinceDonation() {
+
+  var donationDate = document.getElementById("last_donation").value;
+
+  if(!donationDate) return;
+
+  var today = new Date();
+  var lastDate = new Date(donationDate);
+
+  var diffTime = today - lastDate;
+  var diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  document.getElementById("days_since_last_donation").value = diffDays;
+}
+
+
+function handleRegistration(event) {
+  var age = document.getElementById("current_age").value;
+
+  if(age < 18 || age > 65){
+    alert("❌ Age must be between 18 and 65");
+    event.preventDefault();
+    return;
+  }
+
+  event.preventDefault();
+  document.getElementById("popup").style.display = "flex";
+  setTimeout(() => { event.target.submit(); }, 2000);
+}
+
+function goHome(){ window.location.href = "/login"; }
+</script>
+
+<style>
+
+
+/* 🎯 THEME VARIABLES */
+:root {
+  --bg: #fdf2f2;
+  --text: #1a1a1a;
+  --card: #ffffff;
+  --input-bg: #fdf5f5;
+}
+
+/* 🌙 DARK MODE */
+body[data-theme="dark"] {
+  --bg: #121212;
+  --text: #ffffff;
+  --card: #1e1e1e;
+  --input-bg: #2a2a2a;
+}
+
+/* 🖥️ SYSTEM MODE */
+@media (prefers-color-scheme: dark) {
+  body[data-theme="system"] {
+    --bg: #121212;
+    --text: #ffffff;
+    --card: #1e1e1e;
+    --input-bg: #2a2a2a;
+  }
+}
+
+
+
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  padding: 36px 20px;
+  color: var(--text);
+}
+
+/* LIGHT */
+body[data-theme="light"] {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, #fde0e0 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, #fce4e4 0%, transparent 50%);
+}
+
+/* DARK + SYSTEM */
+body[data-theme="dark"],
+body[data-theme="system"] {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, #1a1a1a 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, #1f1f1f 0%, transparent 50%);
+}
+
+  /* Popup */
+  .popup {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .popup-box {
+    background: var(--card);
+    padding: 40px 36px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+  }
+  .popup-box .tick { font-size: 3.5rem; margin-bottom: 14px; }
+  .popup-box h2 { color: #2e7d32; font-size: 1.3rem; font-weight: 700; }
+
+  /* Card */
+  .box {
+    background: var(--card);
+    padding: 32px 30px;
+    max-width: 760px;
+    margin: auto;
+    border-radius: 20px;
+    border: 1px solid #f0d4d4;
+    box-shadow: 0 8px 32px rgba(198,40,40,0.10);
+  }
+
+  /* Page header */
+  .page-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #fde8e8;
+  }
+  .page-header .icon {
+    width: 52px; height: 52px;
+    background: #c62828;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 14px rgba(198,40,40,0.30);
+    flex-shrink: 0;
+  }
+  .page-header h2 { font-size: 1.4rem; font-weight: 700; color: #b71c1c; }
+  .page-header p  { font-size: 0.8rem; color: #aaa; margin-top: 2px; }
+
+  /* Section heading */
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 28px 0 14px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #c62828;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .section-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #fde8e8;
+  }
+
+  /* Grid */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+  .grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .full { grid-column: 1 / -1; }
+
+  /* Label */
+  label {
+    display: block;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 5px;
+  }
+
+  input, select {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1.5px solid #e8d0d0;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  background: var(--input-bg);   /* 🔥 FIX */
+  color: var(--text);           /* 🔥 FIX */
+  outline: none;
+  transition: 0.2s;
+}
+
+/* 🔥 REMOVE WHITE FLASH */
+input:focus, select:focus {
+  border-color: #c62828;
+  box-shadow: 0 0 0 3px rgba(198,40,40,0.10);
+  background: var(--input-bg);  /* 🔥 FIX */
+  color: var(--text);           /* 🔥 FIX */
+}
+
+/* FORCE TEXT COLOR */
+body[data-theme="dark"] input,
+body[data-theme="dark"] select {
+  color: #ffffff !important;
+}
+
+body[data-theme="light"] input,
+body[data-theme="light"] select {
+  color: #000000 !important;
+}
+
+/* READONLY FIX */
+/* READONLY FIX (THEME BASED) */
+input[readonly] {
+  background: var(--input-bg);
+  color: var(--text);
+  opacity: 0.8;
+}
+
+
+/* 🔥 DATE INPUT ICON FIX */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0); /* normal (light mode) */
+  cursor: pointer;
+}
+
+/* 🌙 DARK MODE */
+body[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+body[data-theme="system"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);  /* 🔥 makes icon white */
+}
+
+/* OPTIONAL: Slight dim look */
+body[data-theme="dark"] input[readonly] {
+  background: #2a2a2a;
+  color: #bbb;
+}
+
+body[data-theme="light"] input[readonly] {
+  background: #f1f1f1;
+  color: #555;
+}
+
+
+  /* Phone row */
+  .phone-row { display: flex; gap: 10px; }
+  .phone-row select { width: 40%; flex-shrink: 0; }
+  .phone-row input#country_code_other { width: 30%; flex-shrink: 0; }
+  .phone-row input[name="contact_number"] { flex: 1; }
+
+  /* Checkbox */
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--input-bg); 
+    border: 1.5px solid #e8d0d0;
+    border-radius: 9px;
+    cursor: pointer;
+    margin: 18px 0 4px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .checkbox-row:hover { background: #fde8e8; border-color: #c62828; }
+  .checkbox-row input[type="checkbox"] {
+    width: 17px; height: 17px;
+    accent-color: #c62828;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .checkbox-row span { font-size: 0.88rem; font-weight: 600; color: #555; }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 12px; margin-top: 28px; }
+  .btn-submit {
+    flex: 1;
+    padding: 13px;
+    background: #c62828;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.93rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(198,40,40,0.28);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  }
+  .btn-submit:hover {
+    background: #b71c1c;
+    box-shadow: 0 5px 16px rgba(198,40,40,0.35);
+    transform: translateY(-1px);
+  }
+  .btn-exit {
+    padding: 13px 24px;
+    background: white;
+    color: #888;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .btn-exit:hover { background: #555; color: white; border-color: #555; }
+</style>
+</head>
+<body data-theme="light">
+
+<!-- Popup -->
+<div id="popup" class="popup">
+  <div class="popup-box">
+    <div class="tick">✅</div>
+    <h2>Registered Successfully!</h2>
+  </div>
+</div>
+
+<div class="box">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="icon">🩸</div>
+    <div>
+      <h2>Register Donor</h2>
+      <p>Fill in your details to join the blood donor network</p>
+    </div>
+  </div>
+
+  <form method="POST" onsubmit="handleRegistration(event)">
+
+    <!-- Account Info -->
+    <div class="section-heading">👤 Account Information</div>
+    <div class="grid">
+      <div>
+        <label>Full Name</label>
+        <input name="name" placeholder="Enter full name" required>
+      </div>
+      <div>
+        <label>Email</label>
+        <input name="email" type="email" placeholder="Enter email" required>
+      </div>
+      <div>
+        <label>Password</label>
+        <input name="password" type="password" placeholder="Create password" required>
+      </div>
+      <div>
+        <label>Contact Number</label>
+        <div class="phone-row">
+          <select name="country_code" id="country_code" onchange="countryOther()" required>
+            <option value="">Code</option>
+            <option value="+91">🇮🇳 +91 India</option>
+            <option value="+1">🇺🇸 +1 USA</option>
+            <option value="+44">🇬🇧 +44 UK</option>
+            <option value="+61">🇦🇺 +61 Australia</option>
+            <option value="+971">🇦🇪 +971 UAE</option>
+            <option value="+65">🇸🇬 +65 Singapore</option>
+            <option value="+81">🇯🇵 +81 Japan</option>
+            <option value="+49">🇩🇪 +49 Germany</option>
+            <option value="+33">🇫🇷 +33 France</option>
+            <option value="+86">🇨🇳 +86 China</option>
+            <option value="Others">Others</option>
+          </select>
+          <input name="country_code_other" id="country_code_other" placeholder="+Code" style="display:none;">
+          <input name="contact_number" type="text" maxlength="10" pattern="[0-9]{10}" placeholder="10-digit number" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- Personal Details -->
+    <div class="section-heading">📋 Personal Details</div>
+    <div class="grid three">
+      <div>
+        <label>Date of Birth</label>
+        <input type="date" name="date_of_birth" id="dob" onchange="calculateAge()" required>
+      </div>
+      <div>
+        <label>Current Age</label>
+        <input name="current_age" id="current_age" readonly required>
+      </div>
+      <div>
+        <label>Age at Registration</label>
+        <input name="age_at_time_of_registration" id="reg_age" readonly required>
+      </div>
+    </div>
+
+    <!-- Permanent Address -->
+    <div class="section-heading">🔵 Permanent Address</div>
+    <div class="grid">
+      <div>
+        <label>State</label>
+        <select name="permanent_state" id="permanent_state" onchange="loadDistrict('permanent');stateOthers('permanent')">
+          <option value="">Select State</option>
+          <option>Andhra Pradesh</option><option>Telangana</option><option>Tamil Nadu</option>
+          <option>Karnataka</option><option>Kerala</option><option>Maharashtra</option>
+          <option>Gujarat</option><option>Rajasthan</option><option>Uttar Pradesh</option>
+          <option>Madhya Pradesh</option><option>Bihar</option><option>West Bengal</option>
+          <option>Punjab</option><option>Haryana</option><option>Odisha</option>
+          <option>Assam</option><option>Jharkhand</option><option>Chhattisgarh</option>
+          <option>Himachal Pradesh</option><option>Uttarakhand</option><option>Goa</option>
+          <option>Tripura</option><option>Meghalaya</option><option>Manipur</option>
+          <option>Mizoram</option><option>Nagaland</option><option>Sikkim</option>
+          <option>Delhi</option><option>Chandigarh</option><option>Puducherry</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="permanent_state_other" name="permanent_state_other" placeholder="Enter State" style="display:none; margin-top:8px;">
+      </div>
+      <div>
+        <label>District</label>
+        <select name="permanent_district" id="permanent_district" onchange="districtOthers('permanent')">
+          <option value="">Select District</option>
+        </select>
+        <input id="permanent_district_other" name="permanent_district_other" placeholder="Enter District" style="display:none; margin-top:8px;">
+      </div>
+      <div>
+        <label>Pincode</label>
+        <input name="permanent_pincode" id="permanent_pincode" placeholder="6-digit pincode" onkeyup="detectLocation(this.value,'permanent')">
+      </div>
+      <div>
+        <label>City</label>
+        <select name="permanent_city" id="permanent_city" onchange="cityOthers('permanent')">
+          <option value="">Select City</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="permanent_city_other" name="permanent_city_other" placeholder="Enter City" style="display:none; margin-top:8px;">
+      </div>
+      <div class="full">
+        <label>Street / Area / House No</label>
+        <select name="permanent_street" id="permanent_street" onchange="streetOthers('permanent')">
+          <option value="">Select Area</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="permanent_street_other" name="permanent_street_other" placeholder="Enter Street / Area / House No" style="display:none; margin-top:8px;">
+      </div>
+    </div>
+
+    <!-- Same address checkbox -->
+    <label class="checkbox-row">
+      <input type="checkbox" id="same" onclick="sameAddress()">
+      <span>✅ Current Address is same as Permanent Address</span>
+    </label>
+
+    <!-- Current Address -->
+    <div class="section-heading">🟢 Current Address</div>
+    <div class="grid">
+      <div>
+        <label>State</label>
+        <select name="current_state" id="current_state" onchange="loadDistrict('current');stateOthers('current')">
+          <option value="">Select State</option>
+          <option>Andhra Pradesh</option><option>Telangana</option><option>Tamil Nadu</option>
+          <option>Karnataka</option><option>Kerala</option><option>Maharashtra</option>
+          <option>Gujarat</option><option>Rajasthan</option><option>Uttar Pradesh</option>
+          <option>Madhya Pradesh</option><option>Bihar</option><option>West Bengal</option>
+          <option>Punjab</option><option>Haryana</option><option>Odisha</option>
+          <option>Assam</option><option>Jharkhand</option><option>Chhattisgarh</option>
+          <option>Himachal Pradesh</option><option>Uttarakhand</option><option>Goa</option>
+          <option>Tripura</option><option>Meghalaya</option><option>Manipur</option>
+          <option>Mizoram</option><option>Nagaland</option><option>Sikkim</option>
+          <option>Delhi</option><option>Chandigarh</option><option>Puducherry</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="current_state_other" name="current_state_other" placeholder="Enter State" style="display:none; margin-top:8px;">
+      </div>
+      <div>
+        <label>District</label>
+        <select name="current_district" id="current_district" onchange="districtOthers('current')">
+          <option value="">Select District</option>
+        </select>
+        <input id="current_district_other" name="current_district_other" placeholder="Enter District" style="display:none; margin-top:8px;">
+      </div>
+      <div>
+        <label>Pincode</label>
+        <input name="current_pincode" id="current_pincode" placeholder="6-digit pincode" onkeyup="detectLocation(this.value,'current')">
+      </div>
+      <div>
+        <label>City</label>
+        <select name="current_city" id="current_city" onchange="cityOthers('current')">
+          <option value="">Select City</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="current_city_other" name="current_city_other" placeholder="Enter City" style="display:none; margin-top:8px;">
+      </div>
+      <div class="full">
+        <label>Street / Area / House No</label>
+        <select name="current_street" id="current_street" onchange="streetOthers('current')">
+          <option value="">Select Area</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="current_street_other" name="current_street_other" placeholder="Enter Street / Area / House No" style="display:none; margin-top:8px;">
+      </div>
+    </div>
+
+    <!-- Blood Details -->
+    <div class="section-heading">🩸 Blood Details</div>
+    <div class="grid three">
+      <div>
+        <label>Blood Group</label>
+        <select name="blood_group" required>
+          <option value="">Select Blood Group</option>
+          <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+          <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+        </select>
+      </div>
+      <div>
+        <label>Availability</label>
+        <select name="availability">
+          <option value="">Select</option>
+          <option>Yes</option><option>No</option>
+        </select>
+      </div>
+      <div>
+        <label>Months Since First Donation</label>
+        <input name="months" type="number" placeholder="e.g. 12" required>
+      </div>
+      <div>
+        <label>Number of Donations</label>
+        <input name="donations" type="number" placeholder="e.g. 3" required>
+      </div>
+      <div>
+        <label>Pints Donated</label>
+        <input name="pints" type="number" step="0.1" placeholder="e.g. 1.5" required>
+      </div>
+      <div>
+        <label>Haemoglobin (g/dL)</label>
+       <input name="haemoglobin" type="number" step="0.1" placeholder="e.g. 13.5" required>     
+      </div>
+
+      <div>
+        <label>Platelets Count</label>
+        <input name="platelets" type="number" placeholder="e.g. 250000" required>
+      </div>
+
+      <div>
+        <label>Blood Pressure</label>
+        <input name="blood_pressure" placeholder="e.g. 120/80" required>
+      </div>
+
+      <div>
+        <label>Gender</label>
+        <select name="gender" required>
+        <option value="">Select Gender</option>
+        <option>Male</option>
+        <option>Female</option>
+        <option>Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Last Blood Donation Date</label>
+        <input type="date"
+               id="last_donation"
+               name="last_blood_donation_date"
+               onchange="calculateDaysSinceDonation()"
+               required>
+      </div>
+
+      <div>
+        <label>Days Since Last Donation</label>
+        <input id="days_since_last_donation" readonly placeholder="Auto calculated">
+      </div>
+      
+    </div>
+    
+
+    <!-- Buttons -->
+    <div class="btn-row">
+      <button type="submit" class="btn-submit">🩸 Register Now</button>
+      <button type="button" class="btn-exit" onclick="goHome()">✕ Exit</button>
+    </div>
+
+  </form>
+</div>
+
+<script>
+window.onload = function() {
+  if (typeof applyTheme === "function") {
+    applyTheme();
+  }
+};
+</script>
+
+
+</body>
+</html>

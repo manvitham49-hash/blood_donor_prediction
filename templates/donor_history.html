@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+<title>Donor History</title>
+
+<style>
+
+/* ===== BASE THEME ===== */
+
+/* DEFAULT LIGHT */
+body {
+  font-family: 'Inter', sans-serif;
+  padding: 30px;
+  background: #fdf2f2;
+  color: #1a1a1a;
+}
+
+/* DARK MODE */
+body[data-theme="dark"] {
+  background: #121212;
+  color: white;
+}
+
+/* CONTAINER */
+.container {
+  max-width: 900px;
+  margin: auto;
+  background: white;
+  padding: 25px;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+}
+
+body[data-theme="dark"] .container {
+  background: #1e1e1e;
+  color: white;
+}
+
+/* HEADER */
+h2 { color:#c62828; }
+
+/* TEXT */
+.status-text {
+  color:#777;
+  font-size:13px;
+  margin-bottom:15px;
+}
+
+/* FILTER */
+.filter-bar {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:20px;
+}
+
+select, input {
+  padding:6px 10px;
+  border-radius:6px;
+  border:1px solid #ddd;
+}
+
+button {
+  padding:6px 12px;
+  background:#c62828;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+/* DARK INPUTS */
+body[data-theme="dark"] select,
+body[data-theme="dark"] button {
+  background: #2a2a2a;
+  color: white;
+  border: 1px solid #444;
+}
+
+/* GRID */
+.grid {
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:20px;
+}
+
+/* CARDS */
+.column {
+  background: #fafafa;
+  padding:15px;
+  border-radius:10px;
+  border:1px solid #eee;
+}
+
+body[data-theme="dark"] .column {
+  background: #2a2a2a;
+  border: 1px solid #444;
+}
+
+/* COUNT */
+.count {
+  background:#eee;
+  padding:2px 8px;
+  border-radius:12px;
+  font-size:12px;
+}
+
+body[data-theme="dark"] .count {
+  background:#444;
+  color:white;
+}
+
+/* ITEMS */
+.item {
+  padding:10px;
+  border-bottom:1px solid #eee;
+  color:#333;
+}
+
+.time {
+  font-size:12px;
+  color:#777;
+}
+
+body[data-theme="dark"] .item {
+  border-bottom:1px solid #444;
+  color:#ddd;
+}
+
+body[data-theme="dark"] .time {
+  color:#aaa;
+}
+
+/* STATUS COLORS */
+.blocked { color:#c62828; }
+.unblocked { color:#2e7d32; }
+
+/* DATE INPUT FIX */
+body[data-theme="dark"] input[type="date"] {
+  background-color: #2a2a2a;
+  color: white;
+  border: 1px solid #444;
+}
+
+body[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+/* BUTTON */
+.back-btn {
+  display:inline-block;
+  margin-top:20px;
+  text-decoration:none;
+  color:white;
+  background:#c62828;
+  padding:8px 14px;
+  border-radius:6px;
+}
+
+/* HIDDEN */
+.hidden { display:none; }
+
+</style>
+
+<script>
+function toggleCustom(val){
+    const box = document.getElementById("customRange");
+    box.style.display = (val === "custom") ? "flex" : "none";
+}
+
+window.onload = function() {
+
+    const today = new Date();
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(today.getMonth() - 6);
+
+    const maxDate = today.toISOString().split('T')[0];
+    const minDate = sixMonthsAgo.toISOString().split('T')[0];
+
+    const from = document.getElementById("from");
+    const to = document.getElementById("to");
+
+    if(from && to){
+        from.min = minDate;
+        from.max = maxDate;
+
+        to.min = minDate;
+        to.max = maxDate;
+    }
+
+    const mode = "{{ selected_mode }}";
+    if(mode === "custom"){
+        toggleCustom("custom");
+    }
+};
+
+function validateRange(){
+    const from = document.getElementById("from").value;
+    const to = document.getElementById("to").value;
+
+    if(from && to){
+        const d1 = new Date(from);
+        const d2 = new Date(to);
+        const diff = (d2 - d1) / (1000*60*60*24);
+
+        if(diff < 0){
+            alert("End date must be after start date");
+            return false;
+        }
+
+        if(diff > 180){
+            alert("Max 6 months range allowed");
+            return false;
+        }
+    }
+    return true;
+}
+</script>
+
+</head>
+
+<body>
+
+<!-- ✅ FIXED: APPLY THEME AFTER BODY LOADS -->
+<script>
+applyTheme();
+</script>
+
+<div class="container">
+
+<h2>📜 Donor History ({{ donor_id }})</h2>
+
+<p class="status-text">
+{% if from_date and to_date %}
+  Showing {{ from_date }} → {{ to_date }} ({{ total_days }} days)
+{% elif selected_days %}
+  Showing last {{ selected_days }} days
+{% else %}
+  Showing all history
+{% endif %}
+</p>
+
+<form method="GET" class="filter-bar" onsubmit="return validateRange()">
+
+<select name="days" onchange="toggleCustom(this.value)">
+  <option value="">Select Filter</option>
+
+  <option value="30" {% if selected_days==30 %}selected{% endif %}>Last 1 Month</option>
+  <option value="90" {% if selected_days==90 %}selected{% endif %}>Last 3 Months</option>
+  <option value="180" {% if selected_days==180 %}selected{% endif %}>Last 6 Months</option>
+
+  <option value="custom" {% if selected_mode=='custom' %}selected{% endif %}>
+    Custom Range
+  </option>
+</select>
+
+<div id="customRange" class="hidden">
+  <input type="date" id="from" name="from_date" value="{{ from_date }}">
+  <input type="date" id="to" name="to_date" value="{{ to_date }}">
+</div>
+
+<button type="submit">Apply</button>
+
+</form>
+
+<div class="grid">
+
+<div class="column">
+<h3 class="blocked">🔴 Blocked <span class="count">{{ blocked_list|length }}</span></h3>
+{% for h in blocked_list %}
+<div class="item">
+<div>{{ h.date }}</div>
+<div class="time">{{ h.time }}</div>
+</div>
+{% endfor %}
+</div>
+
+<div class="column">
+<h3 class="unblocked">🟢 Unblocked <span class="count">{{ unblocked_list|length }}</span></h3>
+{% for h in unblocked_list %}
+<div class="item">
+<div>{{ h.date }}</div>
+<div class="time">{{ h.time }}</div>
+</div>
+{% endfor %}
+</div>
+
+</div>
+
+<a href="/admin-donors?filter=history" class="back-btn">⬅ Back</a>
+
+</div>
+
+</body>
+</html>

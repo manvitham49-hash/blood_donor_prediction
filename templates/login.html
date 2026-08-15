@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+
+<title>Donor Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+
+:root {
+  --bg: #fdf2f2;
+  --card: #ffffff;
+  --text: #1a1a1a;
+  --input-bg: #fdf5f5;
+}
+
+body[data-theme="dark"] {
+  --bg: #121212;
+  --card: #1e1e1e;
+  --text: #ffffff;
+  --input-bg: #2a2a2a;
+}
+
+
+/* ===== THEME VARIABLES ===== */
+
+/* LIGHT gradient */
+body[data-theme="light"] {
+  background: #fdf2f2;
+  background-image:
+    radial-gradient(ellipse at 20% 20%, #fde0e0 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, #fce4e4 0%, transparent 50%);
+}
+
+/* DARK gradient */
+body[data-theme="dark"] {
+  background: #121212;
+  background-image:
+    radial-gradient(ellipse at 20% 20%, #1a1a1a 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, #1f1f1f 0%, transparent 50%);
+}
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+  .box {
+    background: var(--card);
+    padding: 40px 34px;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 20px;
+    border: 1px solid #f0d4d4;
+    box-shadow: 0 8px 32px rgba(198,40,40,0.10);
+    text-align: center;
+  }
+
+  .icon {
+    width: 60px; height: 60px;
+    background: #c62828;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.7rem;
+    margin: 0 auto 20px;
+    box-shadow: 0 6px 18px rgba(198,40,40,0.30);
+  }
+
+  h2 { font-size: 1.4rem; font-weight: 700; color: #b71c1c; margin-bottom: 6px; }
+  .subtitle { font-size: 0.83rem; color: #aaa; margin-bottom: 26px; }
+
+  .error {
+    background: #fde8e8;
+    color: #c62828;
+    border: 1px solid #f5c6c6;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 0.84rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+    text-align: left;
+  }
+
+  input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1.5px solid #e8d0d0;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  background: var(--input-bg) !important;
+  color: var(--text);
+  outline: none;
+  margin-bottom: 12px;
+}
+
+/* FIX FOCUS */
+input:focus {
+  border-color: #c62828;
+  box-shadow: 0 0 0 3px rgba(198,40,40,0.12);
+  background: var(--input-bg); /* ✅ FIXED */
+  color: var(--text);
+}
+
+
+/* FIX CHROME AUTOFILL */
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
+  -webkit-text-fill-color: var(--text) !important;
+}
+
+input[type="password"] {
+  background: var(--input-bg) !important;
+}
+
+
+
+  button {
+    width: 100%;
+    padding: 12px;
+    background: #c62828;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.93rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(198,40,40,0.28);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+    margin-bottom: 18px;
+  }
+  button:hover {
+    background: #b71c1c;
+    box-shadow: 0 5px 16px rgba(198,40,40,0.35);
+    transform: translateY(-1px);
+  }
+
+  .links {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .links a {
+    font-size: 0.84rem;
+    color: #c62828;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s, text-decoration 0.2s;
+  }
+  .links a:hover { color: #b71c1c; text-decoration: underline; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #333;
+    margin-bottom: 18px;
+  }
+
+  .admin-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px;
+    background: #fdf5f5;
+    border: 1.5px solid #e8c0c0;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #c62828;
+    text-decoration: none;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+  .admin-link:hover {
+    background: #c62828;
+    border-color: #c62828;
+    color: white;
+  }
+
+
+/* DARK MODE FIXES */
+
+body[data-theme="dark"] h2 {
+  color: #ff6b6b;
+}
+
+body[data-theme="dark"] .subtitle {
+  color: #bbb;
+}
+
+body[data-theme="dark"] .error {
+  background: #3a1f1f;
+  border-color: #5c2a2a;
+  color: #ff6b6b;
+}
+
+body[data-theme="dark"] .links a {
+  color: #ff6b6b;
+}
+
+body[data-theme="dark"] .links a:hover {
+  color: #ff8a80;
+}
+
+body[data-theme="dark"] .admin-link {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #ff6b6b;
+}
+
+body[data-theme="dark"] .admin-link:hover {
+  background: #c62828;
+  color: white;
+}
+
+
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="icon">👤</div>
+  <h2>Donor Login</h2>
+  <p class="subtitle">Welcome back! Sign in to your account</p>
+
+  {% if error %}
+  <div class="error">⚠️ {{ error }}</div>
+  {% endif %}
+
+  <form method="POST">
+    <input name="email" type="email" placeholder="Enter your email" required>
+    <input name="password" type="password" placeholder="Enter your password" required>
+    <button type="submit">Login →</button>
+  </form>
+
+  <div class="links">
+    <a href="/register">Create Account</a>
+    <a href="/forgot-password">Forgot Password?</a>
+    <a href="/" style="color:#999;">← Back to Login Options</a>
+  </div>
+
+  <hr class="divider">
+
+  <a href="/admin-login" class="admin-link">🔐 Not a donor? Login as Admin</a>
+</div>
+
+<script>
+window.onload = function () {
+    if (typeof applyTheme === "function") {
+        applyTheme();
+    }
+};
+</script>
+
+
+</body>
+</html>

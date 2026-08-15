@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+
+<title>Update Donor Address</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+var districts = {
+  "Andhra Pradesh":["Anantapur","Chittoor","East Godavari","Guntur","Krishna","Kurnool","Nellore","Prakasam","Srikakulam","Tirupati","Visakhapatnam","Vizianagaram","West Godavari","Kadapa"],
+  "Telangana":["Hyderabad","Warangal","Karimnagar","Nizamabad","Khammam","Mahbubnagar","Nalgonda","Adilabad"],
+  "Tamil Nadu":["Chennai","Coimbatore","Madurai","Salem","Trichy","Vellore","Tirunelveli"],
+  "Maharashtra":["Mumbai","Pune","Nagpur","Nashik","Aurangabad","Thane"],
+  "Karnataka":["Bangalore","Mysore","Hubli","Mangalore","Belgaum"],
+  "Kerala":["Trivandrum","Kochi","Kozhikode","Thrissur"]
+};
+
+function loadDistrict(type){
+  var state = document.getElementById(type+"_state").value;
+  var box = document.getElementById(type+"_district");
+  var otherBox = document.getElementById(type+"_district_other");
+  box.innerHTML = "<option value=''>Select District</option>";
+  otherBox.style.display = "none";
+  if(districts[state]){
+    districts[state].forEach(function(d){
+      var opt = document.createElement("option");
+      opt.value = d; opt.text = d;
+      box.appendChild(opt);
+    });
+  }
+  box.innerHTML += "<option value='Others'>Others</option>";
+}
+
+function districtOthers(type){
+  var val = document.getElementById(type+"_district").value;
+  document.getElementById(type+"_district_other").style.display = (val==="Others") ? "block" : "none";
+}
+
+function stateOthers(type){
+  var val = document.getElementById(type+"_state").value;
+  document.getElementById(type+"_state_other").style.display = (val==="Others") ? "block" : "none";
+}
+
+async function detectLocation(pin, type){
+  if(pin.length != 6) return;
+  let response = await fetch("https://api.postalpincode.in/pincode/"+pin);
+  let data = await response.json();
+  if(data[0].Status=="Success"){
+    let postOffices = data[0].PostOffice;
+    let cityBox = document.getElementById(type+"_city");
+    cityBox.innerHTML = "<option value=''>Select City</option>";
+    let cities = new Set();
+    postOffices.forEach(p => cities.add(p.District));
+    cities.forEach(city => {
+      let opt = document.createElement("option");
+      opt.value = city; opt.text = city;
+      cityBox.appendChild(opt);
+    });
+    cityBox.innerHTML += "<option value='Others'>Others</option>";
+    let streetBox = document.getElementById(type+"_street");
+    streetBox.innerHTML = "<option value=''>Select Area</option>";
+    let areas = new Set();
+    postOffices.forEach(p => areas.add(p.Name));
+    areas.forEach(area => {
+      let opt = document.createElement("option");
+      opt.value = area; opt.text = area;
+      streetBox.appendChild(opt);
+    });
+    streetBox.innerHTML += "<option value='Others'>Others</option>";
+  }
+}
+</script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    background: #fdf2f2;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, #fde0e0 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, #fce4e4 0%, transparent 50%);
+    padding: 36px 20px;
+    color: #1a1a1a;
+  }
+
+  .box {
+    background: white;
+    padding: 32px 30px;
+    max-width: 680px;
+    margin: auto;
+    border-radius: 18px;
+    border: 1px solid #f0d4d4;
+    box-shadow: 0 8px 32px rgba(198,40,40,0.10);
+  }
+
+  /* Header row */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-icon {
+    width: 46px; height: 46px;
+    background: #c62828;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    box-shadow: 0 4px 12px rgba(198,40,40,0.28);
+  }
+  .header h3 { font-size: 1.2rem; font-weight: 700; color: #b71c1c; }
+  .header p  { font-size: 0.78rem; color: #aaa; margin-top: 2px; }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: white;
+    color: #c62828;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: 1.5px solid #e8c0c0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+  }
+  .back-btn:hover { background: #c62828; color: white; }
+
+  /* Donor info strip */
+  .donor-info {
+    display: flex;
+    gap: 16px;
+    background: #fdf5f5;
+    border: 1px solid #f0d4d4;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .donor-info .chip {
+    font-size: 0.83rem;
+    color: #555;
+  }
+  .donor-info .chip span {
+    font-weight: 700;
+    color: #c62828;
+  }
+
+  /* Form grid */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+  }
+  .full { grid-column: 1 / -1; }
+
+  label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #888;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  select, input[type="text"], input:not([type]) {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid #e8d0d0;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    background: #fdf5f5;
+    color: #1a1a1a;
+    outline: none;
+    transition: border 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  select:focus, input:focus {
+    border-color: #c62828;
+    box-shadow: 0 0 0 3px rgba(198,40,40,0.10);
+    background: white;
+  }
+
+  button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    background: #c62828;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.93rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    box-shadow: 0 3px 10px rgba(198,40,40,0.28);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  }
+  button[type="submit"]:hover {
+    background: #b71c1c;
+    box-shadow: 0 5px 16px rgba(198,40,40,0.35);
+    transform: translateY(-1px);
+  }
+
+  hr { border: none; border-top: 1px solid #fde8e8; margin: 20px 0; }
+</style>
+</head>
+<body>
+
+<div class="box">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">📍</div>
+      <div>
+        <h3>Update Current Address</h3>
+        <p>Edit donor location details below</p>
+      </div>
+    </div>
+    <a href="/admin-donors" class="back-btn">⬅ All Donors</a>
+  </div>
+
+  <!-- Donor info strip -->
+  <div class="donor-info">
+    <div class="chip">Donor ID: <span>{{ donor.donor_id }}</span></div>
+    <div class="chip">Name: <span>{{ donor.name }}</span></div>
+  </div>
+
+  <hr>
+
+  <!-- Form -->
+  <form method="POST">
+    <div class="form-grid">
+
+      <div>
+        <label>State</label>
+        <select name="current_state" id="current_state" onchange="loadDistrict('current');stateOthers('current')">
+          <option value="{{ donor.current_state }}">{{ donor.current_state }}</option>
+          <option>Andhra Pradesh</option>
+          <option>Telangana</option>
+          <option>Tamil Nadu</option>
+          <option>Karnataka</option>
+          <option>Kerala</option>
+          <option>Maharashtra</option>
+          <option value="Others">Others</option>
+        </select>
+        <input id="current_state_other" name="current_state_other" placeholder="Enter State" style="display:none; margin-top:8px;">
+      </div>
+
+      <div>
+        <label>District</label>
+        <select name="current_district" id="current_district" onchange="districtOthers('current')">
+          <option value="{{ donor.current_district }}">{{ donor.current_district }}</option>
+        </select>
+        <input id="current_district_other" name="current_district_other" placeholder="Enter District" style="display:none; margin-top:8px;">
+      </div>
+
+      <div>
+        <label>Pincode</label>
+        <input name="current_pincode" id="current_pincode" value="{{ donor.current_pincode }}" placeholder="Enter 6-digit pincode" onkeyup="detectLocation(this.value,'current')">
+      </div>
+
+      <div>
+        <label>City</label>
+        <select name="current_city" id="current_city">
+          <option value="{{ donor.current_city }}">{{ donor.current_city }}</option>
+        </select>
+      </div>
+
+      <div class="full">
+        <label>Street / Area / Flat</label>
+        <select name="current_street" id="current_street">
+          <option value="{{ donor.current_street }}">{{ donor.current_street }}</option>
+        </select>
+      </div>
+
+      <div class="full">
+        <button type="submit">✅ Update Address</button>
+      </div>
+
+    </div>
+  </form>
+
+</div>
+</body>
+</html>
