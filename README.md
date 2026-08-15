@@ -142,3 +142,8 @@ GitHub: https://github.com/manvitham49-hash
 ## License
 
 This project is developed for educational and academic purposes.
+
+
+## Live Demo
+
+https://blood-donor-prediction-1.onrender.com
